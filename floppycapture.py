@@ -6,6 +6,7 @@ import sys
 import argparse 
 import os
 import subprocess
+from subprocess import check_output
 import datetime
 
 ############### CHANGE THE LIBRARY #############
@@ -38,7 +39,7 @@ date = datetime.datetime.today().strftime('%Y-%m-%d')
 mediaType = args.mediatype
 #totalDisks = args.number
 callNum = args.call
-
+label = args.label
 
 #######################
 ###### FUNCTIONS ######
@@ -63,7 +64,14 @@ def kfStream():
 metadata = open('TEMPmetadata.txt','w')
 metadata.write("callnumber: " + callNum)
 metadata.write("\n" + "Date of Capture: " + date)
-metadata.write("\n" + "Label Transcript: " + args.label)
+metadata.write("\n" + "Label Transcript: " + label)
+
+### Get title
+
+os.system("curl https://onesearch.library.utoronto.ca/onesearch/"+callNum+
+	"////ajax? | jq .books.result.records[0].title")
+
+
 
 ### Open master log file, appendable, create if it doesn't exist
 log = open('projectlog.csv','a+')
@@ -86,7 +94,7 @@ else:
 ### use cheese or VTL42 test utility to set focus, if needed
 
 picName = callNum + '_' + args.descriptor + '_pic.jpg'
-picParameters = " --jpeg 95 -r 1600x1200 --no-banner -d /dev/video1 " + picName
+picParameters = " --jpeg 95 -r 1600x1200 --no-banner " + picName
 os.system("fswebcam"+ picParameters)
 metadata.write ("\n" + "Picture: " + picName)
 
