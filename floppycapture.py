@@ -6,7 +6,6 @@ import sys
 import argparse 
 import os
 import subprocess
-from subprocess import check_output
 import datetime
 
 ############### CHANGE THE LIBRARY #############
@@ -78,15 +77,15 @@ if os.path.exists(outputPath):
 
 ### Open our metadata.txt file
 metadata = open('TEMPmetadata.txt','w')
-metadata.write("Callnumber: " + callNum)
-metadata.write("\n" + "Date of Capture: " + date)
-metadata.write("\n" + "Label Transcript: " + label)
+metadata.write("Call Number: " +callNum)
+metadata.write("\n" + "Date of Capture: " +date)
+metadata.write("\n" + "Label Transcript: \"" +label+"\"")
 
 ### Get title
-
-os.system("curl https://onesearch.library.utoronto.ca/onesearch/"+callNum+"////ajax? | jq .books.result.records[0].title")
-
-
+#title = os.system("curl https://onesearch.library.utoronto.ca/onesearch/"+callNum+"////ajax? | jq .books.result.records[0].title")
+getTitle = subprocess.getoutput("curl -s https://onesearch.library.utoronto.ca/onesearch/"+callNum+"////ajax? | jq .books.result.records[0].title")
+metadata.write("\n" + "Title: " + str(getTitle))
+print("FC UPDATE: title is: " +str(getTitle))
 
 ### Open master log file, appendable, create if it doesn't exist, opens in CAPTURED
 log = open('projectlog.csv','a+')
@@ -118,10 +117,13 @@ os.system("fswebcam"+ picParameters)
 if os.path.exists(outputPath+picName):
 	print "FC UPDATE: picture exists"
 	metadata.write ("\n" + "Picture: " + picName)
-
+	
 ### Get a preservation stream
 #kfStream()
 
+###GET JSON
+metadata.write("\n"+"JSON:"+"\n")
+os.system("curl https://onesearch.library.utoronto.ca/onesearch/"+callNum+"////ajax? >>"+str(metadata))
 
 ####################
 #### END MATTER ####
@@ -135,7 +137,7 @@ os.rename('TEMPmetadata.txt', outputPath+newMetadata)
 
 ### Update master log
 log.write("\n"+lib+","+callNum+","+mediaType)
-log.write(","+picName+","+label)
+log.write(","+label)
 
 ### Close master log
 log.close()
