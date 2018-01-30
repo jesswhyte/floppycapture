@@ -10,28 +10,32 @@ import datetime
 
 ############### CHANGE THE LIBRARY #############
 # For list of library IDs, visit: uoft.me/libs #
-################################################ 
+################################################
 lib = "ECSL"
 
 ############## CHANGE THE WORK PATH ############
 #     Change the working path here 	       #
-################################################ 
+################################################
 os.chdir("/home/jess/CAPTURED/")
 
 ### Get arguments
 parser = argparse.ArgumentParser(
 	description ="Script to walk through floppy disk capture workflow, Jan 2018")
 parser.add_argument(
-	'-m', '--mediatype', type=str, help='Use \"3.5\" or \"5.25\"',required=True,
+	'-m', '--mediatype', type=str, 
+	help='Use \"3.5\" or \"5.25\"',required=True,
 	choices=['3.5','5.25'])
 #parser.add_argument(
 #	'-n', '--number', type=int, help='Number of disks in collection', required=True)
 parser.add_argument(
-	'-c', '--call', type=str, help='Call or Collection Number', required=False)
+	'-c', '--call', type=str,
+	help='Call or Collection Number', required=False)
 parser.add_argument(
-	'-d','--descriptor', type=str, help='brief descriptor', required=False)
+	'-d','--descriptor', type=str,
+	help='brief descriptor', required=False)
 parser.add_argument(
-	'-l', '--label', type=str, help='Transcript of label', required=False)
+	'-l', '--label', type=str,
+	help='Transcript of label', required=False)
 
 ### Array for all args passed to script
 args = parser.parse_args()
@@ -49,15 +53,18 @@ label = args.label
 ###### FUNCTIONS ######
 #######################
 
-#def getDiskId():	
+#def getDiskId():
 #	if totalDisks == 1
-#		diskID = callNum + "_001"		
+#		diskID = callNum + "_001"
 #	else:
-#		metadata.write("\n" + "Call/Coll number: " + callNum + "\n" + "Disk 1 of 1")
+#		metadata.write(
+#			"\n"+"Call/Coll number: "+callNum+"\n"+"Disk 1 of 1")
 #		print "end of getDiskId function"
- 	
+
 def kfStream():
-	os.system("dtc -"+drive+" -f/streams/"+callNum+"/"+callNum+"_stream -i0 -p")
+	os.system(
+		"dtc -"+drive+" -f/streams/"+callNum+"/"
+		+callNum+"_stream -i0 -p")
 	print("FC UPDATE: KF in progress...")
 
 
@@ -80,22 +87,23 @@ metadata = open('TEMPmetadata.txt','w')
 metadata.write("Call Number: " +callNum)
 metadata.write("\n" + "Date of Capture: " +date)
 metadata.write("\n" + "Label Transcript: \"" +label+"\"")
+metadata.write("\n" + "Media: "+mediaType+" floppy disk")
 
 ### Get title
-#title = os.system("curl https://onesearch.library.utoronto.ca/onesearch/"+callNum+"////ajax? | jq .books.result.records[0].title")
-getTitle = subprocess.getoutput("curl -s https://onesearch.library.utoronto.ca/onesearch/"+callNum+"////ajax? | jq .books.result.records[0].title")
+getTitle = subprocess.getoutput(
+	"curl -s https://onesearch.library.utoronto.ca/onesearch/"
+	+callNum+"////ajax? | jq .books.result.records[0].title")
 metadata.write("\n" + "Title: " + str(getTitle))
 print("FC UPDATE: title is: " +str(getTitle))
 
-### Open master log file, appendable, create if it doesn't exist, opens in CAPTURED
+### Open master log file, appendable, create if it doesn't exist
 log = open('projectlog.csv','a+')
 
-### check Media 
-if mediaType == "3.5": 
-	metadata.write("\n" + "Media: " + mediaType + " floppy disk")
+### check Media, set drive
+
+if mediaType == "3.5":
 	drive = "d0"
 elif mediaType == "5.25":
-	metadata.write("\n" + "Media: " + mediaType + " floppy disk")
 	drive = "d1"
 
 ### Take a Picture
@@ -118,8 +126,10 @@ if os.path.exists(outputPath+picName):
 #kfStream()
 
 ### Get JSON
-metadata.write("\n"+"JSON:"+"\n")
-getJSON = subprocess.getoutput("curl -s https://onesearch.library.utoronto.ca/onesearch/"+callNum+"////ajax? | jq .")
+metadata.write("\n\n"+"JSON:"+"\n\n")
+getJSON = subprocess.getoutput(
+	"curl -s https://onesearch.library.utoronto.ca/onesearch/"
+	+callNum+"////ajax? | jq '.books.result.records[0]|del(.covers,.holdings)'")
 metadata.write(getJSON)
 
 ####################
@@ -133,8 +143,11 @@ newMetadata = callNum + '_metadata.txt'
 os.rename('TEMPmetadata.txt', outputPath+newMetadata)
 
 ### Update master log
-log.write("\n"+lib+","+callNum+","+mediaType)
-log.write(","+label)
+log.write(
+	"\n"+lib+","+callNum+","+mediaType+
+	","+str(getTitle)+","+"\""+label+"\"")
+if os.path.exists(outputPath+picName):
+	log.write(",Y,")
 
 ### Close master log
 log.close()
