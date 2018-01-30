@@ -14,6 +14,11 @@ import datetime
 ################################################ 
 lib = "ECSL"
 
+############## CHANGE THE WORK PATH ############
+#     Change the working path here 	       #
+################################################ 
+os.chdir("/home/jess/CAPTURED/")
+
 ### Get arguments
 parser = argparse.ArgumentParser(
 	description ="Script to walk through floppy disk capture workflow, Jan 2018")
@@ -25,7 +30,7 @@ parser.add_argument(
 parser.add_argument(
 	'-c', '--call', type=str, help='Call or Collection Number', required=False)
 parser.add_argument(
-	'-d','--descriptor', type=str, help='brief descriptor', required=True)
+	'-d','--descriptor', type=str, help='brief descriptor', required=False)
 parser.add_argument(
 	'-l', '--label', type=str, help='Transcript of label', required=False)
 
@@ -53,27 +58,37 @@ label = args.label
 #		print "end of getDiskId function"
  	
 def kfStream():
-	os.system("dtc -" + drive + " -f"  +callNum+"_stream -i0")
-	print "KF in progress..."
+	os.system("dtc -"+drive+" -f/streams/"+callNum+"/"+callNum+"_stream -i0 -p")
+	print "FC UPDATE: KF in progress..."
+
 
 ########################
 #####  THE GOODS  ######
 ########################
 
+### Create directory for output
+outputPath = lib+"/"+callNum+"/"
+
+if not os.path.exists(outputPath):
+	os.makedirs(outputPath)
+
+#verify output directory created
+if os.path.exists(outputPath):
+	print outputPath+" is created"
+
 ### Open our metadata.txt file
 metadata = open('TEMPmetadata.txt','w')
-metadata.write("callnumber: " + callNum)
+metadata.write("Callnumber: " + callNum)
 metadata.write("\n" + "Date of Capture: " + date)
 metadata.write("\n" + "Label Transcript: " + label)
 
 ### Get title
 
-os.system("curl https://onesearch.library.utoronto.ca/onesearch/"+callNum+
-	"////ajax? | jq .books.result.records[0].title")
+os.system("curl https://onesearch.library.utoronto.ca/onesearch/"+callNum+"////ajax? | jq .books.result.records[0].title")
 
 
 
-### Open master log file, appendable, create if it doesn't exist
+### Open master log file, appendable, create if it doesn't exist, opens in CAPTURED
 log = open('projectlog.csv','a+')
 
 ### check Media 
@@ -93,10 +108,16 @@ else:
 ### flag -d to set device
 ### use cheese or VTL42 test utility to set focus, if needed
 
-picName = callNum + '_' + args.descriptor + '_pic.jpg'
-picParameters = " --jpeg 95 -r 1600x1200 --no-banner " + picName
+picName = callNum + "_pic.jpg"
+picParameters = " --jpeg 95 -r 1600x1200 --no-banner "+outputPath+picName
 os.system("fswebcam"+ picParameters)
-metadata.write ("\n" + "Picture: " + picName)
+
+### Check if pic successful
+###################################################################TO DO
+
+if os.path.exists(outputPath+picName):
+	print "FC UPDATE: picture exists"
+	metadata.write ("\n" + "Picture: " + picName)
 
 ### Get a preservation stream
 #kfStream()
@@ -109,11 +130,12 @@ metadata.write ("\n" + "Picture: " + picName)
 metadata.close()
 
 ### Rename our metadata.txt file
-newMetadata = callNum + '_' + args.descriptor + '_metadata.txt'
-os.rename('TEMPmetadata.txt', newMetadata)
+newMetadata = callNum + '_metadata.txt'
+os.rename('TEMPmetadata.txt', outputPath+newMetadata)
 
 ### Update master log
-log.write("\n" + lib +","+ callNum +","+"\""+args.label +"\","+ mediaType)
+log.write("\n"+lib+","+callNum+","+mediaType)
+log.write(","+picName+","+label)
 
 ### Close master log
 log.close()
