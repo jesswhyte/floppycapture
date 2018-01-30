@@ -1,5 +1,5 @@
 ### IN PROGRESS
-### Python script to walk through floppy disk capture workflow
+### environment-specific Python3 script to walk through floppy disk capture workflow
 ### Jess, Jan 2018
 
 import sys
@@ -58,7 +58,7 @@ label = args.label
  	
 def kfStream():
 	os.system("dtc -"+drive+" -f/streams/"+callNum+"/"+callNum+"_stream -i0 -p")
-	print "FC UPDATE: KF in progress..."
+	print("FC UPDATE: KF in progress...")
 
 
 ########################
@@ -73,7 +73,7 @@ if not os.path.exists(outputPath):
 
 #verify output directory created
 if os.path.exists(outputPath):
-	print outputPath+" is created"
+	print(outputPath+" is created")
 
 ### Open our metadata.txt file
 metadata = open('TEMPmetadata.txt','w')
@@ -97,9 +97,6 @@ if mediaType == "3.5":
 elif mediaType == "5.25":
 	metadata.write("\n" + "Media: " + mediaType + " floppy disk")
 	drive = "d1"
-else:
-	print "\n" + "Incorrect media type entered, please use 3.5 or 5.25"
-	raise SystemExit
 
 ### Take a Picture
 ### Note: fswebcam defaults to /dev/video0, if device not found...
@@ -112,18 +109,18 @@ picParameters = " --jpeg 95 -r 1600x1200 --no-banner "+outputPath+picName
 os.system("fswebcam"+ picParameters)
 
 ### Check if pic successful
-###################################################################TO DO
 
 if os.path.exists(outputPath+picName):
-	print "FC UPDATE: picture exists"
+	print("FC UPDATE: picture exists")
 	metadata.write ("\n" + "Picture: " + picName)
-	
+
 ### Get a preservation stream
 #kfStream()
 
-###GET JSON
+### Get JSON
 metadata.write("\n"+"JSON:"+"\n")
-os.system("curl https://onesearch.library.utoronto.ca/onesearch/"+callNum+"////ajax? >>"+str(metadata))
+getJSON = subprocess.getoutput("curl -s https://onesearch.library.utoronto.ca/onesearch/"+callNum+"////ajax? | jq .")
+metadata.write(getJSON)
 
 ####################
 #### END MATTER ####
