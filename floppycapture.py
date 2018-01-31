@@ -8,19 +8,26 @@ import os
 import subprocess
 import datetime
 
-############### CHANGE THE LIBRARY #############
-# For list of library IDs, visit: uoft.me/libs #
-################################################
-lib = "ECSL"
+#######################
+###### ARGUMENTS ######
+#######################
 
-############## CHANGE THE WORK PATH ############
-#     Change the working path here 	       #
-################################################
-os.chdir("/home/jess/CAPTURED/")
-
-### Get arguments
 parser = argparse.ArgumentParser(
 	description ="Script to walk through floppy disk capture workflow, Jan 2018")
+parser.add_argument(
+	'-l', '--lib', type=str,
+	help='Library, for a list of library IDs, visit ufot.me/libs ', 
+	required=True,
+	choices=['ARCH','ART','ASTRO','CHEM','CRIM',
+	'DENT','OPIRG','EARTH','EAL','ECSL','FCML',
+	'FNH','GERSTEIN','INFORUM','INNIS','KNOX',
+	'LAW','MDL','MATH','MC','PONTIF','MUSIC',
+	'NEWCOLLEGE','NEWMAN','OISE','PJRC','PHYSICS',
+	'REGIS','RCL','UTL','ROM','MPI','STMIKES',
+	'TFRBL','TRIN','UC','UTARMS','UTM','UTSC','VIC'])
+parser.add_argument(
+        '-d','--dir', type=str,
+        help='Start directory, e.g. /home/jess/CAPTURED', required=True)
 parser.add_argument(
 	'-m', '--mediatype', type=str, 
 	help='Use \"3.5\" or \"5.25\"',required=True,
@@ -31,23 +38,21 @@ parser.add_argument(
 	'-c', '--call', type=str,
 	help='Call or Collection Number', required=False)
 parser.add_argument(
-	'-d','--descriptor', type=str,
-	help='brief descriptor', required=False)
-parser.add_argument(
-	'-l', '--label', type=str,
+	'-t', '--transcript', type=str,
 	help='Transcript of label', required=False)
 
 ### Array for all args passed to script
 args = parser.parse_args()
 
-
 ### Define variables
 drive = "d0"
 date = datetime.datetime.today().strftime('%Y-%m-%d')
+lib = args.lib
 mediaType = args.mediatype
 #totalDisks = args.number
 callNum = args.call
-label = args.label
+label = args.transcript
+dir = args.dir
 
 #######################
 ###### FUNCTIONS ######
@@ -61,16 +66,27 @@ label = args.label
 #			"\n"+"Call/Coll number: "+callNum+"\n"+"Disk 1 of 1")
 #		print "end of getDiskId function"
 
+### TO DO: rewrite kfStream in subprocess, temp)
 def kfStream():
 	os.system(
-		"dtc -"+drive+" -f/streams/"+callNum+"/"
-		+callNum+"_stream -i0 -p")
+		"dtc -"+drive+" -fstreams/"+callNum+"/"
+		+callNum+"_stream -i0 -i4 -i9 -p | tee "
+		+outputPath+callNum+"_capture.log")
 	print("FC UPDATE: KF in progress...")
 
+### TO DO: Rewrite kfImage based on stdout, e.g. MFM = OK
+def kfImage(fileSystem):
+	os.system(
+		"dtc -fstreams/"+callNum+"/"
+		+callNum+"_stream00.0.raw -i0 -f"+outputPath+callNum+"_disk.img -"
+		+fileSystem+" -m1")
 
 ########################
 #####  THE GOODS  ######
 ########################
+
+### Change working directory
+os.chdir(dir)
 
 ### Create directory for output
 outputPath = lib+"/"+callNum+"/"
@@ -78,26 +94,14 @@ outputPath = lib+"/"+callNum+"/"
 if not os.path.exists(outputPath):
 	os.makedirs(outputPath)
 
-#verify output directory created
 if os.path.exists(outputPath):
-	print(outputPath+" is created")
-
-### Open our metadata.txt file
-metadata = open('TEMPmetadata.txt','w')
-metadata.write("Call Number: " +callNum)
-metadata.write("\n" + "Date of Capture: " +date)
-metadata.write("\n" + "Label Transcript: \"" +label+"\"")
-metadata.write("\n" + "Media: "+mediaType+" floppy disk")
+	print("FC UPDATE: "+outputPath+" is created")
 
 ### Get title
 getTitle = subprocess.getoutput(
 	"curl -s https://onesearch.library.utoronto.ca/onesearch/"
 	+callNum+"////ajax? | jq .books.result.records[0].title")
-metadata.write("\n" + "Title: " + str(getTitle))
 print("FC UPDATE: title is: " +str(getTitle))
-
-### Open master log file, appendable, create if it doesn't exist
-log = open('projectlog.csv','a+')
 
 ### check Media, set drive
 
@@ -116,21 +120,38 @@ picName = callNum + "_pic.jpg"
 picParameters = " --jpeg 95 -r 1600x1200 --no-banner "+outputPath+picName
 os.system("fswebcam"+ picParameters)
 
-### Check if pic successful
+### Get JSON & write metadata 
+metadata = open('TEMPmetadata.txt','w')
 
+getJSON = subprocess.getoutput(
+	"curl -s https://onesearch.library.utoronto.ca/onesearch/"
+	+callNum+"////ajax? | jq '.books.result.records[0]|del(.covers,.holdings)'")
+
+metadata.write(getJSON)
+metadata.write("\n\n\n-------DISK INFO------\n")
+metadata.write("\n" + "Call Number: " +callNum)
+metadata.write("\n" + "Date of Disk Capture: " +date)
+metadata.write("\n" + "Disk Label Transcript: \"" +label+"\"")
+metadata.write("\n" + "Media: "+mediaType+"\" floppy disk")
+
+### Check if pic successful
 if os.path.exists(outputPath+picName):
 	print("FC UPDATE: picture exists")
 	metadata.write ("\n" + "Picture: " + picName)
 
 ### Get a preservation stream
-#kfStream()
+go = input("Please insert disk and hit Enter")
 
-### Get JSON
-metadata.write("\n\n"+"JSON:"+"\n\n")
-getJSON = subprocess.getoutput(
-	"curl -s https://onesearch.library.utoronto.ca/onesearch/"
-	+callNum+"////ajax? | jq '.books.result.records[0]|del(.covers,.holdings)'")
-metadata.write(getJSON)
+##### take the stream only if it doesn't already exist
+if not os.path.exists("streams/"+callNum+"/"+callNum+"_stream00.0.raw"):
+	kfStream()
+
+### Convert stream to image and test
+fileSystem = input("Which filesytem?")
+
+kfImage(fileSystem)
+
+### TO DO: write filesystem metadata and verify disk image
 
 ####################
 #### END MATTER ####
@@ -143,11 +164,17 @@ newMetadata = callNum + '_metadata.txt'
 os.rename('TEMPmetadata.txt', outputPath+newMetadata)
 
 ### Update master log
+log = open('projectlog.csv','a+')
+
 log.write(
 	"\n"+lib+","+callNum+","+mediaType+
 	","+str(getTitle)+","+"\""+label+"\"")
-if os.path.exists(outputPath+picName):
-	log.write(",Y,")
-
+if os.path.exists(
+	outputPath+picName):
+	log.write(",Y")
+if os.path.exists(
+	outputPath+"/streams/"+callNum+"/"
+                +callNum+"_stream"):
+	log.write(",stream")
 ### Close master log
 log.close()
