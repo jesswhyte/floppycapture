@@ -1,3 +1,6 @@
 Ignore this for now, in progress
 
-working on floppy capture to automate ingest
+working on floppy capture to automate ingest:
+basically, takes some args, takes a picture of the disk, runs appropriate kryoflux dtc commands, 
+names and places fileswhere I want them, checks for success, updates metadata and logs, yadda yadda,
+super environment-specific
