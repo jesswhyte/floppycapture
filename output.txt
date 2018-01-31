@@ -1,9 +1,0 @@
-KryoFlux DiskTool Console, v2.6, uiv.1, Dec 31 2014, 17:40:27
-(c) 2009-2014 KryoFlux Products & Services Ltd.
-Developed by The Software Preservation Society, www.softpres.org
-Licensed for private, non-commercial use only.
-
-00.0    : frev: 91553, drift: 0.408 us, tfer: 438941 B/s, rpm: 299.231
-00.0    : band: 2.005 us, 3.006 us, 3.883 us, 5.102 us?, 6.829 us?
-00.1    : frev: 90709, drift: 0.766 us, tfer: 433137 B/s, rpm: 299.246
-00.1    : band: 2.000 us, 3.010 us, 4.054 us, 5.172 us?, 6.605 us?
