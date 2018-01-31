@@ -7,6 +7,8 @@ import argparse
 import os
 import subprocess
 import datetime
+import json
+from collections import OrderedDict
 
 #######################
 ###### ARGUMENTS ######
@@ -69,16 +71,16 @@ dir = args.dir
 ### TO DO: rewrite kfStream in subprocess, temp)
 def kfStream():
 	os.system(
-		"dtc -"+drive+" -fstreams/"+callNum+"/"
-		+callNum+"_stream -i0 -i4 -i9 -p | tee "
+		"dtc -"+drive+" -fstreams/"+callDum+"/"
+		+callDum+"_stream -i0 -i4 -i9 -p | tee "
 		+outputPath+callNum+"_capture.log")
 	print("FC UPDATE: KF in progress...")
 
 ### TO DO: Rewrite kfImage based on stdout, e.g. MFM = OK
 def kfImage(fileSystem):
 	os.system(
-		"dtc -fstreams/"+callNum+"/"
-		+callNum+"_stream00.0.raw -i0 -f"+outputPath+callNum+"_disk.img -"
+		"dtc -fstreams/"+callDum+"/"
+		+callDum+"_stream00.0.raw -i0 -f"+outputPath+callDum+"_disk.img -"
 		+fileSystem+" -m1")
 
 ########################
@@ -88,8 +90,11 @@ def kfImage(fileSystem):
 ### Change working directory
 os.chdir(dir)
 
+### replace . in callNum with -
+callDum=callNum.replace('.','-')
+
 ### Create directory for output
-outputPath = lib+"/"+callNum+"/"
+outputPath = lib+"/"+callDum+"/"
 
 if not os.path.exists(outputPath):
 	os.makedirs(outputPath)
@@ -116,40 +121,41 @@ elif mediaType == "5.25":
 ### flag -d to set device
 ### use cheese or VTL42 test utility to set focus, if needed
 
-picName = callNum + "_pic.jpg"
+picName = callDum + ".jpg"
 picParameters = " --jpeg 95 -r 1600x1200 --no-banner "+outputPath+picName
 os.system("fswebcam"+ picParameters)
 
 ### Get JSON & write metadata 
-metadata = open('TEMPmetadata.txt','w')
+capture_dic = {
+	'callnumber': callNum,
+	'disk':{
+	'CaptureDate': date,
+	'media': mediaType+"\" floppy disk",
+	'label':label,
+	'library':lib,
+	'diskpic':outputPath+picName}
+	}
 
 getJSON = subprocess.getoutput(
-	"curl -s https://onesearch.library.utoronto.ca/onesearch/"
-	+callNum+"////ajax? | jq '.books.result.records[0]|del(.covers,.holdings)'")
+        "curl -s https://onesearch.library.utoronto.ca/onesearch/"
+        +callNum+"////ajax? | jq '.books.result.records[0]|del(.covers,.holdings)'")
 
-metadata.write(getJSON)
-metadata.write("\n\n\n-------DISK INFO------\n")
-metadata.write("\n" + "Call Number: " +callNum)
-metadata.write("\n" + "Date of Disk Capture: " +date)
-metadata.write("\n" + "Disk Label Transcript: \"" +label+"\"")
-metadata.write("\n" + "Media: "+mediaType+"\" floppy disk")
-
-### Check if pic successful
-if os.path.exists(outputPath+picName):
-	print("FC UPDATE: picture exists")
-	metadata.write ("\n" + "Picture: " + picName)
+with open('TEMPmetadata.json','w+') as metadata:
+	temp_dic = json.loads(getJSON, object_pairs_hook=OrderedDict)
+	temp_dic.update(capture_dic)
+	json.dump(temp_dic, metadata)
 
 ### Get a preservation stream
 go = input("Please insert disk and hit Enter")
 
 ##### take the stream only if it doesn't already exist
-if not os.path.exists("streams/"+callNum+"/"+callNum+"_stream00.0.raw"):
-	kfStream()
+#if not os.path.exists("streams/"+callNum+"/"+callNum+"_stream00.0.raw"):
+#	kfStream()
 
 ### Convert stream to image and test
-fileSystem = input("Which filesytem?")
+fileSystem = input("Which filesytem? ")
 
-kfImage(fileSystem)
+#kfImage(fileSystem)
 
 ### TO DO: write filesystem metadata and verify disk image
 
@@ -160,8 +166,8 @@ kfImage(fileSystem)
 metadata.close()
 
 ### Rename our metadata.txt file
-newMetadata = callNum + '_metadata.txt'
-os.rename('TEMPmetadata.txt', outputPath+newMetadata)
+newMetadata = callDum + '.json'
+os.rename('TEMPmetadata.json', outputPath+newMetadata)
 
 ### Update master log
 log = open('projectlog.csv','a+')
@@ -173,8 +179,12 @@ if os.path.exists(
 	outputPath+picName):
 	log.write(",Y")
 if os.path.exists(
-	outputPath+"/streams/"+callNum+"/"
-                +callNum+"_stream"):
-	log.write(",stream")
+	outputPath+"/streams/"+callDum+"/"
+                +callDum+"_stream"):
+	log.write(",stream=OK")
+if os.path.exists(
+	outputPath+callDum+"_disk.img"):
+	log.write(",img=OK")
+
 ### Close master log
 log.close()
