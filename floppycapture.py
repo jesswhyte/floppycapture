@@ -8,6 +8,8 @@ import os
 import subprocess
 import datetime
 import json
+import urllib
+from urllib.request import urlopen
 from collections import OrderedDict
 
 #######################
@@ -40,21 +42,27 @@ parser.add_argument(
 	'-c', '--call', type=str,
 	help='Call or Collection Number', required=False)
 parser.add_argument(
+	'-k', '--key', type=str,
+	help='Catkey', required=False)
+parser.add_argument(
 	'-t', '--transcript', type=str,
 	help='Transcript of label', required=False)
 
 ### Array for all args passed to script
 args = parser.parse_args()
 
-### Define variables
+### Variables
 drive = "d0"
 date = datetime.datetime.today().strftime('%Y-%m-%d')
 lib = args.lib
 mediaType = args.mediatype
 #totalDisks = args.number
 callNum = args.call
+callDum=callNum.replace('.','-')
+catKey = args.key
 label = args.transcript
 dir = args.dir
+catUrl = "https://search.library.utoronto.ca/details?"+catKey+"&format=json"
 
 #######################
 ###### FUNCTIONS ######
@@ -68,20 +76,27 @@ dir = args.dir
 #			"\n"+"Call/Coll number: "+callNum+"\n"+"Disk 1 of 1")
 #		print "end of getDiskId function"
 
-### TO DO: rewrite kfStream in subprocess, temp)
+### TODO: rewrite kfStream as subprocess, temp)
 def kfStream():
 	os.system(
 		"dtc -"+drive+" -fstreams/"+callDum+"/"
-		+callDum+"_stream -i0 -i4 -i9 -p | tee "
-		+outputPath+callNum+"_capture.log")
+		+callDum+"_stream -i0 -i4 -p | tee "
+		+outputPath+callDum+"_capture.log")
 	print("FC UPDATE: KF in progress...")
 
-### TO DO: Rewrite kfImage based on stdout, e.g. MFM = OK
+### TODO: Rewrite kfImage based on stdout of kfStream, e.g. MFM = OK
+### TODO: Rewrite as subprocess
+
 def kfImage(fileSystem):
 	os.system(
 		"dtc -fstreams/"+callDum+"/"
 		+callDum+"_stream00.0.raw -i0 -f"+outputPath+callDum+"_disk.img -"
 		+fileSystem+" -m1")
+
+def get_json_data(url):
+	response = urlopen(url)
+	data = response.read().decode()
+	return json.loads((data), object_pairs_hook=OrderedDict)
 
 ########################
 #####  THE GOODS  ######
@@ -89,9 +104,6 @@ def kfImage(fileSystem):
 
 ### Change working directory
 os.chdir(dir)
-
-### replace . in callNum with -
-callDum=callNum.replace('.','-')
 
 ### Create directory for output
 outputPath = lib+"/"+callDum+"/"
@@ -103,10 +115,15 @@ if os.path.exists(outputPath):
 	print("FC UPDATE: "+outputPath+" is created")
 
 ### Get title
-getTitle = subprocess.getoutput(
-	"curl -s https://onesearch.library.utoronto.ca/onesearch/"
-	+callNum+"////ajax? | jq .books.result.records[0].title")
-print("FC UPDATE: title is: " +str(getTitle))
+## make a dictionary out of response from catUrl
+## extract the title value from title key from that dictionary
+## will write later in json dump
+
+cat_dic = (get_json_data(catUrl))
+
+title= cat_dic ["record"]["title"]
+
+print("FC UPDATE: title is: " +title)
 
 ### check Media, set drive
 
@@ -123,41 +140,44 @@ elif mediaType == "5.25":
 
 picName = callDum + ".jpg"
 picParameters = " --jpeg 95 -r 1600x1200 --no-banner "+outputPath+picName
+### TODO: write as subprocess)
 os.system("fswebcam"+ picParameters)
 
 ### Get JSON & write metadata 
+## Create dictionary of capture data
 capture_dic = {
-	'callnumber': callNum,
 	'disk':{
 	'CaptureDate': date,
 	'media': mediaType+"\" floppy disk",
-	'label':label,
-	'library':lib,
-	'diskpic':outputPath+picName}
+	'label': label,
+	'library': lib,
+	'diskpic': picName}
 	}
 
-getJSON = subprocess.getoutput(
-        "curl -s https://onesearch.library.utoronto.ca/onesearch/"
-        +callNum+"////ajax? | jq '.books.result.records[0]|del(.covers,.holdings)'")
+## delete holdings info (e.g. checkout info) from cat_dic
+del cat_dic["record"]["holdings"]
+
+#getJSON = cat_dic["record"]
 
 with open('TEMPmetadata.json','w+') as metadata:
-	temp_dic = json.loads(getJSON, object_pairs_hook=OrderedDict)
-	temp_dic.update(capture_dic)
-	json.dump(temp_dic, metadata)
+	cat_dic.update(capture_dic)
+	json.dump(cat_dic, metadata)
 
 ### Get a preservation stream
+
+## Pause and make sure disk is in there
 go = input("Please insert disk and hit Enter")
+## take the stream only if it doesn't already exist
+if not os.path.exists("streams/"+callDum+"/"+callDum+"_stream00.0.raw"):
+	kfStream()
 
-##### take the stream only if it doesn't already exist
-#if not os.path.exists("streams/"+callNum+"/"+callNum+"_stream00.0.raw"):
-#	kfStream()
-
-### Convert stream to image and test
+### Convert stream to image, TODO: include test
 fileSystem = input("Which filesytem? ")
 
-#kfImage(fileSystem)
+if not os.path.exists(outputPath+callDum+"_disk.img"):
+	kfImage(fileSystem)
 
-### TO DO: write filesystem metadata and verify disk image
+### TODO: write filesystem metadata and verify disk image
 
 ####################
 #### END MATTER ####
@@ -173,18 +193,25 @@ os.rename('TEMPmetadata.json', outputPath+newMetadata)
 log = open('projectlog.csv','a+')
 
 log.write(
-	"\n"+lib+","+callNum+","+mediaType+
-	","+str(getTitle)+","+"\""+label+"\"")
+	"\n"+lib+","+callNum+","+catKey+","+mediaType+
+	","+str(title)+","+"\""+label+"\"")
 if os.path.exists(
 	outputPath+picName):
-	log.write(",Y")
+	log.write(",pic=OK")
+else:
+	log.write(",pic=NO")
+
 if os.path.exists(
 	outputPath+"/streams/"+callDum+"/"
                 +callDum+"_stream"):
 	log.write(",stream=OK")
+else:
+	log.write(",stream=NO")
 if os.path.exists(
 	outputPath+callDum+"_disk.img"):
 	log.write(",img=OK")
+else:
+	log.write(",img=NO")
 
 ### Close master log
 log.close()
