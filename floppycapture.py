@@ -103,6 +103,9 @@ def get_json_data(url):
 ########################
 
 ### Change working directory
+if not os.path.exists(dir):
+	os.makedirs(dir)
+	
 os.chdir(dir)
 
 ### Create directory for output
