@@ -55,7 +55,6 @@ parser.add_argument(
 args = parser.parse_args()
 
 ### Variables
-drive = "d0"
 date = datetime.datetime.today().strftime('%Y-%m-%d')
 lib = args.lib
 mediaType = args.mediatype
@@ -96,6 +95,13 @@ def kfImage(fileSystem):
 		"dtc -fstreams/"+callDum+"/"
 		+callDum+"_stream00.0.raw -i0 -f"+outputPath+callDum+"_disk.img -"
 		+fileSystem+" -m1")
+
+def kfi4():
+	os.system(
+		"dtc -"+drive+" -fstreams/"+callDum+"/"
+		+callDum+"_stream -i0 -f"+outputPath+callDum+
+		"_disk.img -i4 -p | tee "+outputPath+callDum+"_capture.log")
+	print("FC UPDATE: KF i4 image + stream in progress....")
 
 def get_json_data(url):
 	response = urlopen(url)
@@ -146,6 +152,8 @@ elif mediaType == "5.25":
 ### use cheese or VTL42 test utility to set focus, if needed
 
 picName = callDum + ".jpg"
+
+#take a jpeg, 95 is quality, r = res'n, no banner, -S = skip frames
 picParameters = " --jpeg 95 -r 1600x1200 --no-banner -S 5 "+outputPath+picName
 ### TODO: write as subprocess)
 os.system("fswebcam"+ picParameters)
@@ -170,19 +178,14 @@ with open('TEMPmetadata.json','w+') as metadata:
 	cat_dic.update(capture_dic)
 	json.dump(cat_dic, metadata)
 
-### Get a preservation stream
+### Get an i4 MFM image
 
 ## Pause and make sure disk is in there
 go = input("Please insert disk and hit Enter")
+
 ## take the stream only if it doesn't already exist
 if not os.path.exists("streams/"+callDum+"/"+callDum+"_stream00.0.raw"):
-	kfStream()
-
-### Convert stream to image, TODO: include test
-fileSystem = input("Which filesytem? ")
-
-if not os.path.exists(outputPath+callDum+"_disk.img"):
-	kfImage(fileSystem)
+	kfi4()
 
 ### TODO: write filesystem metadata and verify disk image
 
