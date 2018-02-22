@@ -100,7 +100,7 @@ def kfi4():
 	os.system(
 		"dtc -"+drive+" -fstreams/"+callDum+"/"
 		+callDum+"_stream -i0 -f"+outputPath+callDum+
-		"_disk.img -i4 -p | tee "+outputPath+callDum+"_capture.log")
+		"_disk.img -i4 -t2 -p | tee "+outputPath+callDum+"_capture.log")
 	print("FC UPDATE: KF i4 image + stream in progress....")
 
 def get_json_data(url):

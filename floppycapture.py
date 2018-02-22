@@ -84,7 +84,7 @@ note=args.note
 def kfStream():
 	os.system(
 		"dtc -"+drive+" -fstreams/"+callDum+"/"
-		+callDum+"_stream -i0 -i4 -p | tee "
+		+callDum+"_stream -i0 -i4 -t2 -p | tee "
 		+outputPath+callDum+"_capture.log")
 	print("FC UPDATE: KF in progress...")
 
