@@ -33,6 +33,9 @@ parser.add_argument(
         '-d','--dir', type=str,
         help='Start directory, e.g. /home/jess/CAPTURED', required=True)
 parser.add_argument(
+	'-i','--i4',action=store_true,
+	help='use flag to default to i4/MFM')
+parser.add_argument(
 	'-m', '--mediatype', type=str, 
 	help='Use \"3.5\" or \"5.25\"',required=True,
 	choices=['3.5','5.25'])
@@ -96,6 +99,13 @@ def kfImage(fileSystem):
 		"dtc -fstreams/"+callDum+"/"
 		+callDum+"_stream00.0.raw -i0 -f"+outputPath+callDum+"_disk.img -"
 		+fileSystem+" -m1")
+
+def kfi4():
+	os.system(
+		"dtc -"+drive+" -fstreams/"+callDum+"/"
+		+callDum+"_stream -i0 -f"+outputPath+callDum+
+		"_disk.img -i4 -t2 -p | tee "+outputPath+callDum+"_capture.log")
+	print("FC UPDATE: KF i4 image + stream in progress....")
 
 def get_json_data(url):
 	response = urlopen(url)
@@ -176,13 +186,13 @@ with open('TEMPmetadata.json','w+') as metadata:
 go = input("Please insert disk and hit Enter")
 ## take the stream only if it doesn't already exist
 if not os.path.exists("streams/"+callDum+"/"+callDum+"_stream00.0.raw"):
-	kfStream()
-
-### Convert stream to image, TODO: include test
-fileSystem = input("Which filesytem? ")
-
-if not os.path.exists(outputPath+callDum+"_disk.img"):
-	kfImage(fileSystem)
+	if args.i4:
+		kfi4()
+	else:
+		kfStream()
+		fileSystem = input("Which filesytem? ")
+		if not os.path.exists(outputPath+callDum+"_disk.img"):		
+			kfImage(fileSystem)
 
 ### TODO: write filesystem metadata and verify disk image
 
