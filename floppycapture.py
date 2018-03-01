@@ -33,7 +33,7 @@ parser.add_argument(
         '-d','--dir', type=str,
         help='Start directory, e.g. /home/jess/CAPTURED', required=True)
 parser.add_argument(
-	'-i','--i4',action=store_true,
+	'-i','--i4',action='store_true',
 	help='use flag to default to i4/MFM')
 parser.add_argument(
 	'-m', '--mediatype', type=str, 
@@ -87,9 +87,9 @@ note=args.note
 def kfStream():
 	os.system(
 		"dtc -"+drive+" -fstreams/"+callDum+"/"
-		+callDum+"_stream -i0 -i4 -t2 -p | tee "
+		+callDum+"_stream -i0 -t2 -p | tee "
 		+outputPath+callDum+"_capture.log")
-	print("FC UPDATE: KF in progress...")
+	
 
 ### TODO: Rewrite kfImage based on stdout of kfStream, e.g. MFM = OK
 ### TODO: Rewrite as subprocess
@@ -105,7 +105,7 @@ def kfi4():
 		"dtc -"+drive+" -fstreams/"+callDum+"/"
 		+callDum+"_stream -i0 -f"+outputPath+callDum+
 		"_disk.img -i4 -t2 -p | tee "+outputPath+callDum+"_capture.log")
-	print("FC UPDATE: KF i4 image + stream in progress....")
+	
 
 def get_json_data(url):
 	response = urlopen(url)
@@ -218,12 +218,6 @@ if os.path.exists(
 else:
 	log.write(",pic=NO")
 
-if os.path.exists(
-	outputPath+"/streams/"+callDum+"/"
-                +callDum+"_stream00.0.raw"):
-	log.write(",stream=OK")
-else:
-	log.write(",stream=NO")
 if os.path.exists(
 	outputPath+callDum+"_disk.img"):
 	log.write(",img=OK")
