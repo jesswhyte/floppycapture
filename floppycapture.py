@@ -96,7 +96,7 @@ def kfi4():
 	os.system(
 		"dtc -"+drive+" -fstreams/"+callDum+"/"
 		+callDum+"_stream -i0 -f"+outputPath+callDum+
-		"_disk.img -i4 -t1 -p | tee "+outputPath+callDum+"_capture.log")
+		"_disk.img -i4 -t1 -l8 -p | tee "+outputPath+callDum+"_capture.log")
 	
 #get some json from an URL
 def get_json_data(url):
@@ -171,8 +171,9 @@ with open('TEMPmetadata.json','w+') as metadata:
 
 ### PRINT THE TITLE
 ##TODO: Consider requiring user to confirm TITLE IS: +title
+## x1b stuff is just to make it show up a different color so it's noticeable
 
-print("FC UPDATE: title is: " +title)
+print("\x1b[6;30;42m" + "FC UPDATE: title is: " +title + "\x1b[0m")
 
 
 ### KRYOFLUX - GET A PRESERVATION STREAM
