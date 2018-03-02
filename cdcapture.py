@@ -33,18 +33,11 @@ parser.add_argument(
         '-d','--dir', type=str,
         help='Start directory, e.g. /home/jess/CAPTURED', required=True)
 parser.add_argument(
-	'-i','--i4',action='store_true',
-	help='use flag to default to i4/MFM')
-parser.add_argument(
-	'-m', '--mediatype', type=str, 
-	help='Use \"3.5\" or \"5.25\"',required=True,
-	choices=['3.5','5.25'])
-parser.add_argument(
 	'-c', '--call', type=str,
-	help='Call or Collection Number', required=True)
+	help='Call or Collection Number', required=False)
 parser.add_argument(
 	'-k', '--key', type=str,
-	help='Catkey', required=True)
+	help='Catkey', required=False)
 parser.add_argument(
 	'-t', '--transcript', type=str,
 	help='Transcript of label', required=False)
@@ -59,7 +52,6 @@ args = parser.parse_args()
 drive = "d0"
 date = datetime.datetime.today().strftime('%Y-%m-%d')
 lib = args.lib
-mediaType = args.mediatype
 callNum = args.call
 callDum=callNum.replace('.','-')
 catKey = args.key
@@ -72,28 +64,18 @@ note=args.note
 ###### FUNCTIONS ######
 #######################
 
+#make ISO from CD
 
-### TODO: rewrite kfStream as subprocess, temp)
-def kfStream():
+
+#############################################################################################3
+####   LEFT OFF HERE ***************###
+##############################################################################################
+##############################################################################################
+##############################################################################################
+
+def cdGrab():
 	os.system(
-		"dtc -"+drive+" -fstreams/"+callDum+"/"
-		+callDum+"_stream -i0 -t2 -p | tee "
-		+outputPath+callDum+"_capture.log")
-	
-
-### TODO: Rewrite as subprocess
-
-#takes existing stream, attemps to make image based on given fileSystem [not in use]
-def kfImage(fileSystem):
-	os.system(
-		"dtc -fstreams/"+callDum+"/"
-		+callDum+"_stream00.0.raw -i0 -f"+outputPath+callDum+"_disk.img -"
-		+fileSystem+" -m1")
-
-#Takes preservation stream + attempts to create i4 or MFM disk image
-def kfi4():
-	os.system(
-		"dtc -"+drive+" -fstreams/"+callDum+"/"
+		"genisoimage -o "+callDum+"/"
 		+callDum+"_stream -i0 -f"+outputPath+callDum+
 		"_disk.img -i4 -t1 -l8 -p | tee "+outputPath+callDum+"_capture.log")
 	

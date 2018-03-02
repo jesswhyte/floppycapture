@@ -81,6 +81,7 @@ def kfStream():
 		+outputPath+callDum+"_capture.log")
 	
 
+### TODO: Rewrite kfImage based on stdout of kfStream, e.g. MFM = OK
 ### TODO: Rewrite as subprocess
 
 #takes existing stream, attemps to make image based on given fileSystem [not in use]
