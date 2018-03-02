@@ -39,8 +39,6 @@ parser.add_argument(
 	'-m', '--mediatype', type=str, 
 	help='Use \"3.5\" or \"5.25\"',required=True,
 	choices=['3.5','5.25'])
-#parser.add_argument(
-#	'-n', '--number', type=int, help='Number of disks in collection', required=True)
 parser.add_argument(
 	'-c', '--call', type=str,
 	help='Call or Collection Number', required=False)
@@ -54,7 +52,7 @@ parser.add_argument(
 	'-n','--note', type=str,
 	help='catalog note', required=False)
 
-### Array for all args passed to script
+## Array for all args passed to script
 args = parser.parse_args()
 
 ### Variables
@@ -62,7 +60,6 @@ drive = "d0"
 date = datetime.datetime.today().strftime('%Y-%m-%d')
 lib = args.lib
 mediaType = args.mediatype
-#totalDisks = args.number
 callNum = args.call
 callDum=callNum.replace('.','-')
 catKey = args.key
@@ -75,13 +72,6 @@ note=args.note
 ###### FUNCTIONS ######
 #######################
 
-#def getDiskId():
-#	if totalDisks == 1
-#		diskID = callNum + "_001"
-#	else:
-#		metadata.write(
-#			"\n"+"Call/Coll number: "+callNum+"\n"+"Disk 1 of 1")
-#		print "end of getDiskId function"
 
 ### TODO: rewrite kfStream as subprocess, temp)
 def kfStream():
@@ -94,19 +84,21 @@ def kfStream():
 ### TODO: Rewrite kfImage based on stdout of kfStream, e.g. MFM = OK
 ### TODO: Rewrite as subprocess
 
+#takes existing stream, attemps to make image based on given fileSystem [not in use]
 def kfImage(fileSystem):
 	os.system(
 		"dtc -fstreams/"+callDum+"/"
 		+callDum+"_stream00.0.raw -i0 -f"+outputPath+callDum+"_disk.img -"
 		+fileSystem+" -m1")
 
+#Takes preservation stream + attempts to create i4 or MFM disk image
 def kfi4():
 	os.system(
 		"dtc -"+drive+" -fstreams/"+callDum+"/"
 		+callDum+"_stream -i0 -f"+outputPath+callDum+
-		"_disk.img -i4 -t2 -p | tee "+outputPath+callDum+"_capture.log")
+		"_disk.img -i4 -t1 -p | tee "+outputPath+callDum+"_capture.log")
 	
-
+#get some json from an URL
 def get_json_data(url):
 	response = urlopen(url)
 	data = response.read().decode()
@@ -122,7 +114,7 @@ if not os.path.exists(dir):
 	
 os.chdir(dir)
 
-### Create directory for output
+### Create directory for output if it doesn't exist
 outputPath = lib+"/"+callDum+"/"
 
 if not os.path.exists(outputPath):
@@ -131,16 +123,14 @@ if not os.path.exists(outputPath):
 if os.path.exists(outputPath):
 	print("FC UPDATE: "+outputPath+" is created")
 
-### Get title
-## make a dictionary out of response from catUrl
+### GET THE TITLE AND OTHER METADATA
+## make a dictionary out of the response from catUrl
 ## extract the title value from title key from that dictionary
 ## will write later in json dump
 
 cat_dic = (get_json_data(catUrl))
 
 title= cat_dic ["record"]["title"]
-
-print("FC UPDATE: title is: " +title)
 
 ### check Media, set drive
 
@@ -149,18 +139,18 @@ if mediaType == "3.5":
 elif mediaType == "5.25":
 	drive = "d1"
 
-### Take a Picture
-### Note: fswebcam defaults to /dev/video0, if device not found...
-### use ls -ltrh /dev/video* to list devices and use 
-### flag -d to set device
-### use cheese or VTL42 test utility to set focus, if needed
+### TAKE A PICTURE
+## Note: fswebcam defaults to /dev/video0, if device not found...
+## use ls -ltrh /dev/video* to list devices and use 
+## flag -d to set device
+## use cheese or VTL42 test utility to set focus, if needed
 
 picName = callDum + ".jpg"
-picParameters = " --jpeg 95 -r 1600x1200 --no-banner -S 5 "+outputPath+picName
+picParameters = " --jpeg 95 -r 800x600 --no-banner -S 5 "+outputPath+picName
 ### TODO: write as subprocess)
 os.system("fswebcam"+ picParameters)
 
-### Get JSON & write metadata 
+### MORE JSON AND METADATA STUFF 
 ## Create dictionary of capture data
 capture_dic = {
 	'disk':{
@@ -174,16 +164,22 @@ capture_dic = {
 ## delete holdings info (e.g. checkout info) from cat_dic
 del cat_dic["record"]["holdings"]
 
-#getJSON = cat_dic["record"]
-
+## write to TEMPmetadata.json for now
 with open('TEMPmetadata.json','w+') as metadata:
 	cat_dic.update(capture_dic)
 	json.dump(cat_dic, metadata)
 
-### Get a preservation stream
+### PRINT THE TITLE
+##TODO: Consider requiring user to confirm TITLE IS: +title
 
-## Pause and make sure disk is in there
+print("FC UPDATE: title is: " +title)
+
+
+### KRYOFLUX - GET A PRESERVATION STREAM
+
+## Pause and give user time to put disk in 
 go = input("Please insert disk and hit Enter")
+
 ## take the stream only if it doesn't already exist
 if not os.path.exists("streams/"+callDum+"/"+callDum+"_stream00.0.raw"):
 	if args.i4:
@@ -194,7 +190,7 @@ if not os.path.exists("streams/"+callDum+"/"+callDum+"_stream00.0.raw"):
 		if not os.path.exists(outputPath+callDum+"_disk.img"):		
 			kfImage(fileSystem)
 
-### TODO: write filesystem metadata and verify disk image
+### TODO: write filesystem metadata and verify disk image - Think about if this should be separate...I think it should...
 
 ####################
 #### END MATTER ####
@@ -207,6 +203,8 @@ newMetadata = callDum + '.json'
 os.rename('TEMPmetadata.json', outputPath+newMetadata)
 
 ### Update master log
+## TODO: this should really use csv library, I was lazy
+
 log = open('projectlog.csv','a+')
 
 log.write(
