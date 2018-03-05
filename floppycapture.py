@@ -7,7 +7,7 @@
 import sys
 import argparse 
 import os
-import subprocess
+import subprocess as subproc
 import datetime
 import json
 import urllib
@@ -76,13 +76,31 @@ note=args.note
 ###### FUNCTIONS ######
 #######################
 
-
 ### TODO: rewrite kfStream as subprocess, temp)
 def kfStream():
-	os.system(
-		"dtc -"+drive+" -fstreams/"+callDum+"/"
-		+callDum+"_stream -i0 -t2 -p | tee "
-		+outputPath+callDum+"_capture.log")
+	p = subproc.Popen(
+		[
+			'dtc',
+			"-%s" % drive,
+			"-fstreams/%s/%s_stream" % (callDum, callDum),
+			'-i0',
+			'-t2',
+			'-p'
+		],stdout=subproc.PIPE,stderr=subproc.PIPE
+	)
+	output, errors = p.communicate()
+	outfile = str("%s%s_capture.log" % (outputPath, callDum))
+	errfile = str("%s%s_errors.log" % (outputPath, callDum))
+	with open(outfile, 'wb') as f:
+		f.write(output)
+	if errors:
+		with open(errfile, 'wb') as f:
+			f.write(errors)
+
+	# os.system(
+	# 	"dtc -"+drive+" -fstreams/"+callDum+"/"
+	# 	+callDum+"_stream -i0 -t2 -p | tee "
+	# 	+outputPath+callDum+"_capture.log")
 
 #takes existing stream, attemps to make image based on given fileSystem [not in use]
 def kfImage(fileSystem):
@@ -154,23 +172,33 @@ if os.path.exists(outputPath):
 ## extract the title value from title key from that dictionary
 ## will write later in json dump
 
-call_dic = get_json_data(callUrl)
+if not catKey:
+	call_dic = get_json_data(callUrl)
+	num_results = call_dic['result']['numResults']
 
-num_results = call_dic['result']['numResults']
-
-# If there are multiple records, prompt for which one is correct
-if num_results > 1:
-	# From what we've seen, there should only be one record
-	if len(call_dic['result']['records']) > 1:
-		sys.exit('There\'s more than one record. Script is not designed to handle this case.')
-	results_dict = get_json_data(call_dic['result']['records'][0]['jsonLink'])
-	catKey = disambiguate_records(results_dict)
-else:
-	catKey = call_dic['result']['records'][0]['catkey']
+	# If there are multiple records, prompt for which one is correct
+	if num_results > 1:
+		# From what we've seen, there should only be one record
+		if len(call_dic['result']['records']) > 1:
+			sys.exit('There\'s more than one record. Script is not designed to handle this case.')
+		results_dict = get_json_data(call_dic['result']['records'][0]['jsonLink'])
+		catKey = disambiguate_records(results_dict)
+	else:
+		catKey = call_dic['result']['records'][0]['catkey']
 
 catUrl = str("https://search.library.utoronto.ca/details?%s&format=json" % catKey)
 
 cat_dic = get_json_data(catUrl)
+
+for cn in cat_dic['record']['holdings']['items']:
+	if callNum in cn['callnumber'].replace(' ', '').strip():
+		print('Validation of Call number succeeded.')
+		cnes = 1
+		break
+	else:
+		cnes = 0
+if cnes != 1:
+	sys.exit('Failed to validate Call number')
 
 title = cat_dic['record']['title']
 imprint = cat_dic['record']['imprint']
@@ -263,7 +291,6 @@ if os.path.exists(
 	log.write(",img=OK")
 else:
 	log.write(",img=NO")
-
 
 ### Close master log
 log.close()
