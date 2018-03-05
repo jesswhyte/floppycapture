@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 ### IN PROGRESS
 ### environment-specific Python3 script to walk through floppy disk capture workflow
 ### Jess, Jan 2018
@@ -44,7 +46,7 @@ parser.add_argument(
 	help='Call or Collection Number', required=True)
 parser.add_argument(
 	'-k', '--key', type=str,
-	help='Catkey', required=True)
+	help='Catkey')
 parser.add_argument(
 	'-t', '--transcript', type=str,
 	help='Transcript of label', required=False)
@@ -65,7 +67,9 @@ callDum=callNum.replace('.','-')
 catKey = args.key
 label = args.transcript
 dir = args.dir
-catUrl = "https://search.library.utoronto.ca/details?"+catKey+"&format=json"
+callUrl = str(
+	"https://search.library.utoronto.ca/search?N=0&Ntx=mode+matchallpartial&Nu=p_work_normalized&Np=1&Ntk=p_call_num_949&format=json&Ntt=%s" % callNum
+)
 note=args.note
 
 #######################
@@ -79,9 +83,6 @@ def kfStream():
 		"dtc -"+drive+" -fstreams/"+callDum+"/"
 		+callDum+"_stream -i0 -t2 -p | tee "
 		+outputPath+callDum+"_capture.log")
-	
-
-### TODO: Rewrite as subprocess
 
 #takes existing stream, attemps to make image based on given fileSystem [not in use]
 def kfImage(fileSystem):
@@ -97,11 +98,39 @@ def kfi4():
 		+callDum+"_stream -i0 -f"+outputPath+callDum+
 		"_disk.img -i4 -t1 -l8 -p | tee "+outputPath+callDum+"_capture.log")
 	
-#get some json from an URL
+#get some json from a URL
 def get_json_data(url):
 	response = urlopen(url)
 	data = response.read().decode()
 	return json.loads((data), object_pairs_hook=OrderedDict)
+
+# For when there are multiple cat keys for a call number
+def disambiguate_records(d):
+	print('\x1b[1;31;40m' + 'Multiple Cat Keys were found for this call number.' + '\x1b[0m')
+	x = 1
+	for r in d['result']['records']:
+		y = 1
+		print()
+		print('\x1b[1;33;40m' + "Record %d" % x + '\x1b[0m')
+		print("Title: %s" % r['title'])
+		print("Imprint: %s" % r['imprint'])
+		print("CatKey: %s" % r['catkey'])
+		print('Holdings:')
+		for h in r['holdings']['items']:
+			print("Holding %d" % y)
+			print("Call Number: %s\n" % h['callnumber'])
+			y += 1
+		x += 1
+	while True:
+		try:
+			cr = int(input('Which is correct? '))
+			cr = cr - 1
+			ck = d['result']['records'][cr]['catkey']
+			break
+		except (IndexError, ValueError):
+			print('Invalid response.')
+
+	return ck
 
 ########################
 #####  THE GOODS  ######
@@ -115,10 +144,8 @@ os.chdir(dir)
 
 ### Create directory for output if it doesn't exist
 outputPath = lib+"/"+callDum+"/"
-
 if not os.path.exists(outputPath):
 	os.makedirs(outputPath)
-
 if os.path.exists(outputPath):
 	print("FC UPDATE: "+outputPath+" is created")
 
@@ -127,12 +154,33 @@ if os.path.exists(outputPath):
 ## extract the title value from title key from that dictionary
 ## will write later in json dump
 
-cat_dic = (get_json_data(catUrl))
+call_dic = get_json_data(callUrl)
 
-title= cat_dic ["record"]["title"]
+num_results = call_dic['result']['numResults']
+
+# If there are multiple records, prompt for which one is correct
+if num_results > 1:
+	# From what we've seen, there should only be one record
+	if len(call_dic['result']['records']) > 1:
+		sys.exit('There\'s more than one record. Script is not designed to handle this case.')
+	results_dict = get_json_data(call_dic['result']['records'][0]['jsonLink'])
+	catKey = disambiguate_records(results_dict)
+else:
+	catKey = call_dic['result']['records'][0]['catkey']
+
+catUrl = str("https://search.library.utoronto.ca/details?%s&format=json" % catKey)
+
+cat_dic = get_json_data(catUrl)
+
+title = cat_dic['record']['title']
+imprint = cat_dic['record']['imprint']
+catkey = cat_dic['record']['catkey']
+
+### PRINT THE METADATA
+## x1b stuff is just to make it show up a different color so it's noticeable
+print('\x1b[1;32;40m' + "Using:\nTitle: %s\nImprint: %s\nCatKey: %s" % (title, imprint, catkey) + '\x1b[0m')
 
 ### check Media, set drive
-
 if mediaType == "3.5":
 	drive = "d0"
 elif mediaType == "5.25":
@@ -161,18 +209,12 @@ capture_dic = {
 	}
 
 ## delete holdings info (e.g. checkout info) from cat_dic
-del cat_dic["record"]["holdings"]
+del cat_dic['record']['holdings']
 
 ## write to TEMPmetadata.json for now
 with open('TEMPmetadata.json','w+') as metadata:
 	cat_dic.update(capture_dic)
 	json.dump(cat_dic, metadata)
-
-### PRINT THE TITLE
-##TODO: Consider requiring user to confirm TITLE IS: +title
-## x1b stuff is just to make it show up a different color so it's noticeable
-
-print("\x1b[6;30;42m" + "FC UPDATE: title is: " +title + "\x1b[0m")
 
 
 ### KRYOFLUX - GET A PRESERVATION STREAM
