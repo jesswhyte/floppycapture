@@ -11,6 +11,7 @@ import subprocess as subproc
 import datetime
 import json
 import urllib
+import re
 from urllib.request import urlopen
 from collections import OrderedDict
 
@@ -64,6 +65,8 @@ lib = args.lib
 mediaType = args.mediatype
 callNum = args.call
 callDum=callNum.replace('.','-')
+#removes the DISK[#] identifier needed for callDum, but only after creating callDum
+callNum = re.sub(r".DISK\d","",callNum)
 catKey = args.key
 label = args.transcript
 dir = args.dir
@@ -162,10 +165,31 @@ os.chdir(dir)
 
 ### Create directory for output if it doesn't exist
 outputPath = lib+"/"+callDum+"/"
+
+### JW NOTE: changed to check if os.path exists and then ask whether or not to proceed and how
+
+if os.path.exists(outputPath):
+	replacePath = input("Call num path already exists, proceed anyway y/n? ")
+	if replacePath.lower() == 'y' or replacePath.lower() == 'yes':
+		# because sometimes I want to keep original photo/metadata, but want to try replacing the stream w/ copy
+		replaceStream = input("Replace stream/image only y/n? ")
+		if replaceStream.lower() == 'y' or replaceStream.lower() == 'yes':
+			if args.i4:
+				kfi4()
+			else:
+				kfStream()
+				fileSystem = input("Which filesytem? ")
+				kfImage(fileSystem)
+			sys.exit("Stream/image replaced. Exiting...")
+		if replaceStream.lower() == 'n' or replaceStream.lower() =='no':
+			print("Replacing "+callDum+" ...")
+	if replacePath.lower() == 'n' or replacePath.lower() == 'no':
+		sys.exit("Exiting...")
+
 if not os.path.exists(outputPath):
 	os.makedirs(outputPath)
-if os.path.exists(outputPath):
-	print("FC UPDATE: "+outputPath+" is created")
+
+print("Searching callNum: "+callNum)
 
 ### GET THE TITLE AND OTHER METADATA
 ## make a dictionary out of the response from catUrl
@@ -180,6 +204,8 @@ if not catKey:
 	if num_results > 1:
 		# From what we've seen, there should only be one record
 		if len(call_dic['result']['records']) > 1:
+			#JW note: added os.rmdir(dir) to backtrack on fail
+			os.rmdir(dir)
 			sys.exit('There\'s more than one record. Script is not designed to handle this case.')
 		results_dict = get_json_data(call_dic['result']['records'][0]['jsonLink'])
 		catKey = disambiguate_records(results_dict)
@@ -190,15 +216,19 @@ catUrl = str("https://search.library.utoronto.ca/details?%s&format=json" % catKe
 
 cat_dic = get_json_data(catUrl)
 
-for cn in cat_dic['record']['holdings']['items']:
-	if callNum in cn['callnumber'].replace(' ', '').strip():
-		print('Validation of Call number succeeded.')
-		cnes = 1
-		break
-	else:
-		cnes = 0
-if cnes != 1:
-	sys.exit('Failed to validate Call number')
+### JW NOTE: Temporarily taking out because does not account for year spaces, e.g. T385.L5585.1992 does not pass
+#for cn in cat_dic['record']['holdings']['items']:
+#	if callNum in cn['callnumber'].replace(' ', '').strip():
+#		print('Validation of Call number succeeded.')
+#		cnes = 1
+#		break
+#	else:
+#		cnes = 0
+#if cnes != 1:
+### Adding backtracking on fail...
+#	os.rmdir(dir)
+#	sys.exit('Failed to validate Call number')
+
 
 title = cat_dic['record']['title']
 imprint = cat_dic['record']['imprint']
@@ -207,6 +237,7 @@ catkey = cat_dic['record']['catkey']
 ### PRINT THE METADATA
 ## x1b stuff is just to make it show up a different color so it's noticeable
 print('\x1b[1;32;40m' + "Using:\nTitle: %s\nImprint: %s\nCatKey: %s" % (title, imprint, catkey) + '\x1b[0m')
+
 
 ### check Media, set drive
 if mediaType == "3.5":
@@ -275,10 +306,21 @@ os.rename('TEMPmetadata.json', outputPath+newMetadata)
 ### Update master log
 ## TODO: this should really use csv library, I was lazy
 
+### JW NOTE: ADDED way to update notes at end of process
+noteupdate = input("If you would like to update the disk notes (currently: "+note+"), please re-enter, otherwise hit Enter: ")
+if noteupdate == "":
+	note = note
+	print("Note unchanged")
+else:
+	note = noteupdate
+	print("Note has been updated to: "+note)
+
+#convert title to string
+
 log = open('projectlog.csv','a+')
 
 log.write(
-	"\n"+lib+","+callNum+","+catKey+","+mediaType+
+	"\n"+lib+","+callNum+","+str(catKey)+","+mediaType+
 	",\""+str(title)+"\","+"\""+label+"\",\""+note+"\"")
 if os.path.exists(
 	outputPath+picName):
