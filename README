@@ -9,6 +9,7 @@ runs appropriate kryoflux dtc commands (takes stream + MFM by default),
 names and places files where I want them, 
 updates metadata and project logs
 
-Script does not verify success (e.g. image is mountable, files can be extracted/performed)
+Script does not verify success (e.g. if the image is mountable and files can be extracted/performed). That process is separate.
+Also working on method to test streams against a variety of image types (if image type unknown), suggestions welcome. 
 
 note: this is super environment-specific, institution-specific, but could be modified.
