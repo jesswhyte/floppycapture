@@ -2,7 +2,13 @@
 
 ### IN PROGRESS
 ### environment-specific Python3 script to walk through floppy disk capture workflow
+### uses qtv4l document scanner (need ffmpeg) - still working out specifics
+### uses dtc (kryoflux floppy controller card software)
 ### Jess, Jan 2018
+
+#######################
+###### IMPORTS  #######
+#######################
 
 import sys
 import argparse 
@@ -58,14 +64,17 @@ parser.add_argument(
 ## Array for all args passed to script
 args = parser.parse_args()
 
-### Variables
+###############################
+########## VARIABLES ##########
+###############################
+
 drive = "d0"
 date = datetime.datetime.today().strftime('%Y-%m-%d')
 lib = args.lib
 mediaType = args.mediatype
 callNum = args.call
 callDum=callNum.replace('.','-')
-#removes the DISK[#] identifier needed for callDum, but only after creating callDum
+# line below added: removes the DISK[#] identifier needed for callDum, but only after creating callDum
 callNum = re.sub(r".DISK\d","",callNum)
 catKey = args.key
 label = args.transcript
@@ -75,9 +84,24 @@ callUrl = str(
 )
 note=args.note
 
-#######################
-###### FUNCTIONS ######
-#######################
+#################################
+########## CLASS STUFF ##########
+#################################
+
+# font colors, visit https://gist.github.com/vratiu/9780109 for a nice guide to the color codes
+class bcolors:
+    OKGREEN = '\033[92m' #green
+    INPUT = '\033[93m' #yellow, used for when user input required
+    FAIL = '\033[91m' #red, used for failure
+    ENDC = '\033[0m' # end color
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+    GREENBLOCK = '\x1b[1;31;40m' # green with background, used for updates user should check (e.g. Title/Cat report)
+    ENDGB = '\x1b[0m' #end x1b block
+
+####################################
+############ FUNCTIONS #############
+####################################
 
 ### TODO: rewrite kfStream as subprocess, temp)
 def kfStream():
@@ -127,12 +151,12 @@ def get_json_data(url):
 
 # For when there are multiple cat keys for a call number
 def disambiguate_records(d):
-	print('\x1b[1;31;40m' + 'Multiple Cat Keys were found for this call number.' + '\x1b[0m')
+	print(bcolors.BOLD + 'Multiple Cat Keys were found for this call number.' + bcolors.ENDC)
 	x = 1
 	for r in d['result']['records']:
 		y = 1
 		print()
-		print('\x1b[1;33;40m' + "Record %d" % x + '\x1b[0m')
+		print(bcolors.GREENBLOCK + "Record %d" % x + bcolors.ENDGB)
 		print("Title: %s" % r['title'])
 		print("Imprint: %s" % r['imprint'])
 		print("CatKey: %s" % r['catkey'])
@@ -144,18 +168,24 @@ def disambiguate_records(d):
 		x += 1
 	while True:
 		try:
-			cr = int(input('Which is correct? '))
+			cr = int(input(bcolors.INPUT+'Which is correct? '+bcolors.ENDC))
 			cr = cr - 1
 			ck = d['result']['records'][cr]['catkey']
 			break
 		except (IndexError, ValueError):
-			print('Invalid response.')
+			print(bcolors.FAIL+'Invalid response.'+bcolors.ENDC)
 
 	return ck
 
 ########################
 #####  THE GOODS  ######
 ########################
+
+### check Media, set drive
+if mediaType == "3.5":
+	drive = "d0"
+elif mediaType == "5.25":
+	drive = "d1"
 
 ### Change working directory
 if not os.path.exists(dir):
@@ -166,35 +196,37 @@ os.chdir(dir)
 ### Create directory for output if it doesn't exist
 outputPath = lib+"/"+callDum+"/"
 
-### JW NOTE: changed to check if os.path exists and then ask whether or not to proceed and how
+### JW NOTE: Check if os.path exists and then ask whether or not to proceed and how
 
 if os.path.exists(outputPath):
-	replacePath = input("Call num path already exists, proceed anyway y/n? ")
+	replacePath = input(bcolors.INPUT+"Call num path already exists, proceed anyway y/n? "+bcolors.ENDC)
 	if replacePath.lower() == 'y' or replacePath.lower() == 'yes':
-		# because sometimes I want to keep original photo/metadata, but want to try replacing the stream w/ copy
-		replaceStream = input("Replace stream/image only y/n? ")
+		# replaceStream only an option, because sometimes I want to keep original photo/metadata, but want to try 			# replacing what might have been a previously unsuccessful capture, e.g. if there is another copy of disk
+		replaceStream = input(bcolors.INPUT+"Replace stream/image **ONLY** y/n? "+bcolors.ENDC)
 		if replaceStream.lower() == 'y' or replaceStream.lower() == 'yes':
+			go = input(bcolors.INPUT+"Please insert disk and hit Enter"+bcolors.ENDC)
 			if args.i4:
 				kfi4()
 			else:
 				kfStream()
-				fileSystem = input("Which filesytem? ")
+				fileSystem = input(bcolors.INPUT+"Which filesytem? "+bcolors.ENDC)
 				kfImage(fileSystem)
-			sys.exit("Stream/image replaced. Exiting...")
+			sys.exit("-Stream/image replaced. No other entries updated. Exiting...")
 		if replaceStream.lower() == 'n' or replaceStream.lower() =='no':
-			print("Replacing "+callDum+" ...")
+			replaceStream == 'no'
+			print(bcolors.OKGREEN+"Replacing "+callDum+" ..."+bcolors.ENDC)
 	if replacePath.lower() == 'n' or replacePath.lower() == 'no':
-		sys.exit("Exiting...")
+		sys.exit("-No entries updated. Exiting...")
 
 if not os.path.exists(outputPath):
 	os.makedirs(outputPath)
 
-print("Searching callNum: "+callNum)
+print("-Searching callNum: "+callNum+"...")
 
 ### GET THE TITLE AND OTHER METADATA
-## make a dictionary out of the response from catUrl
-## extract the title value from title key from that dictionary
-## will write later in json dump
+# makes a dictionary out of the response from catUrl
+# extracts the title value from title key from that dictionary
+# will write later in the json dump
 
 if not catKey:
 	call_dic = get_json_data(callUrl)
@@ -206,7 +238,7 @@ if not catKey:
 		if len(call_dic['result']['records']) > 1:
 			#JW note: added os.rmdir(dir) to backtrack on fail
 			os.rmdir(dir)
-			sys.exit('There\'s more than one record. Script is not designed to handle this case.')
+			sys.exit(bcolors.FAIL+'There\'s more than one record. Script is not designed to handle this case.'+bcolors.ENDC)
 		results_dict = get_json_data(call_dic['result']['records'][0]['jsonLink'])
 		catKey = disambiguate_records(results_dict)
 	else:
@@ -216,7 +248,8 @@ catUrl = str("https://search.library.utoronto.ca/details?%s&format=json" % catKe
 
 cat_dic = get_json_data(catUrl)
 
-### JW NOTE: Temporarily taking out because does not account for year spaces, e.g. T385.L5585.1992 does not pass
+### JW NOTE: Temporarily taking out below validation because does not account for year spaces, e.g. T385.L5585.1992 does not pass validation
+
 #for cn in cat_dic['record']['holdings']['items']:
 #	if callNum in cn['callnumber'].replace(' ', '').strip():
 #		print('Validation of Call number succeeded.')
@@ -236,27 +269,33 @@ catkey = cat_dic['record']['catkey']
 
 ### PRINT THE METADATA
 ## x1b stuff is just to make it show up a different color so it's noticeable
-print('\x1b[1;32;40m' + "Using:\nTitle: %s\nImprint: %s\nCatKey: %s" % (title, imprint, catkey) + '\x1b[0m')
+print(bcolors.GREENBLOCK + "Using:\nTitle: %s\nImprint: %s\nCatKey: %s" % (title, imprint, catkey) + bcolors.ENDGB)
 
-
-### check Media, set drive
-if mediaType == "3.5":
-	drive = "d0"
-elif mediaType == "5.25":
-	drive = "d1"
 
 ### TAKE A PICTURE
-## Note: fswebcam defaults to /dev/video0, if device not found...
-## use ls -ltrh /dev/video* to list devices and use 
-## flag -d to set device
-## use cheese or VTL42 test utility to set focus, if needed
+# Note: fswebcam defaults to /dev/video0, if device not found...
+# use ls -ltrh /dev/video* to list devices and use 
+# flag -d to set device
+# use VTL42 test utility to set focus and white balance, if needed
+
+### NOTE Mar 10 2018 - Trying out ffmpeg instead of fswebcam, fswebcam commands commented out
+# TODO: write as subprocess, once choose b/w ffmpeg and fswebcam
 
 picName = callDum + ".jpg"
-picParameters = " --jpeg 95 -r 800x600 --no-banner -S 5 "+outputPath+picName
-### TODO: write as subprocess)
-os.system("fswebcam"+ picParameters)
+#fswebcampicParameters = " --jpeg 95 -r 800x600 --no-banner -S 5 "+outputPath+picName
+picParameters = " -f video4linux2 -s 800x600 -q:v 1 -i /dev/video0 -ss 0:0:6 -frames 1 -hide_banner -loglevel panic "+outputPath+picName
+#os.system("fswebcam"+ picParameters)
 
-### MORE JSON AND METADATA STUFF 
+print("-Wait please...taking picture...")
+os.system("ffmpeg"+picParameters)
+
+if os.path.exists(
+	outputPath+picName):
+	print("-Pic: %s%s taken" % (outputPath,picName))
+else:
+	print(bcolors.FAIL+"-Pic: %s%s NOT TAKEN. CHECK CAMERA + FFMPEG SETTINGS" % (outputPath,picName))
+
+### ADD JSON METADATA ABOUT CAPTURE PROCESS 
 ## Create dictionary of capture data
 capture_dic = {
 	'disk':{
@@ -279,48 +318,70 @@ with open('TEMPmetadata.json','w+') as metadata:
 ### KRYOFLUX - GET A PRESERVATION STREAM
 
 ## Pause and give user time to put disk in 
-go = input("Please insert disk and hit Enter")
+go = input(bcolors.INPUT+"Please insert disk and hit Enter"+bcolors.ENDC)
 
 ## take the stream only if it doesn't already exist
-if not os.path.exists("streams/"+callDum+"/"+callDum+"_stream00.0.raw"):
+if os.path.exists("streams/"+callDum+"/"+callDum+"_stream00.0.raw"):
+	replaceStream = input(bcolors.INPUT+"streams/"+callDum+"/"+callDum+"_stream00.0.raw exists, replace y/n? "+bcolors.ENDC)
+	if replaceStream.lower() == 'y' or replaceStream.lower() == 'yes':
+		if args.i4:
+			kfi4()
+		else:
+			kfStream()
+			fileSystem = input(bcolors.INPUT+"Which filesytem? "+bcolors.ENDC)
+			kfImage(fileSystem)		
+	else:
+		# if replaceStream=N, still ask if user wants to update metadata/master log		
+		replaceMeta = input(bcolors.INPUT+"replace metadata and create new log entry y/n? "+bcolors.ENDC)
+		if replaceMeta.lower() == 'n' or replaceMeta.lower() == 'no':
+			# if replaceMeta=N, close out and exit, otherwise carry on
+			metadata.close()
+			sys.exit ("-Exiting...")
+else:
 	if args.i4:
+		# take preservation stream and MFM image at same time		
 		kfi4()
 	else:
+		# take preservation stream, then ask which filesystem, e.g. i9 or i4, etc.		
 		kfStream()
-		fileSystem = input("Which filesytem? ")
-		if not os.path.exists(outputPath+callDum+"_disk.img"):		
+		fileSystem = input(bcolors.INPUT+"Which filesytem? "+bcolors.ENDC)
+		if not os.path.exists(outputPath+callDum+"_disk.img"):	
+			# create image from stream, based on provided filesystem	
 			kfImage(fileSystem)
+	
 
-### TODO: write filesystem metadata and verify disk image - Think about if this should be separate...I think it should...
-
-####################
-#### END MATTER ####
-####################
+#########################################
+#### END MATTER and METADATA UPDATES ####
+#########################################
 
 metadata.close()
 
 ### Rename our metadata.txt file
 newMetadata = callDum + '.json'
-os.rename('TEMPmetadata.json', outputPath+newMetadata)
+os.rename('TEMPmetadata.json', outputPath + newMetadata)
+print("-Updated metadata: "+ outputPath + newMetadata)
 
 ### Update master log
 ## TODO: this should really use csv library, I was lazy
 
-### JW NOTE: ADDED way to update notes at end of process
-noteupdate = input("If you would like to update the disk notes (currently: "+note+"), please re-enter, otherwise hit Enter: ")
+## User asked if they'd like to update the notes they entered
+noteupdate = input(bcolors.INPUT+"If you would like to update the disk notes (currently: "+bcolors.OKGREEN+note+bcolors.ENDC+bcolors.INPUT+"), please re-enter, otherwise hit Enter: "+bcolors.ENDC)
 if noteupdate == "":
 	note = note
-	print("Note unchanged")
+	print("-Note unchanged...")
 else:
 	note = noteupdate
-	print("Note has been updated to: "+note)
+	print("-Note has been updated to: " + bcolors.OKGREEN + note + bcolors.ENDC)
 
-#convert title to string
-
+## Open and update the masterlog - projectlog.csv
 log = open('projectlog.csv','a+')
+print("-Updating log...")
+
+## changing callDum back to '.' for log entry and to retain the DISK[#] if applicable
+callLog=callDum.replace('-','.')
 
 log.write(
-	"\n"+lib+","+callNum+","+str(catKey)+","+mediaType+
+	"\n"+lib+","+callLog+","+str(catKey)+","+mediaType+
 	",\""+str(title)+"\","+"\""+label+"\",\""+note+"\"")
 if os.path.exists(
 	outputPath+picName):
@@ -336,3 +397,7 @@ else:
 
 ### Close master log
 log.close()
+
+sys.exit ("-Exiting...")
+
+
