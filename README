@@ -1,6 +1,15 @@
-Ignore this for now, in progress
+IN PROGRESS
 
-working on floppy capture to automate ingest:
-basically, takes some args, takes a picture of the disk, runs appropriate kryoflux dtc commands, 
-names and places fileswhere I want them, checks for success, updates metadata and logs, yadda yadda,
-super environment-specific
+Workflow script to automate ingest of floppy disks (3.5" and 5.25") using kryoflux two-drive setup and attached camera. 
+
+Basically, script takes some args like media type and call number, 
+takes a picture of the disk, 
+pulls metadata from json returned from catalog call, 
+runs appropriate kryoflux dtc commands (takes stream + MFM by default), 
+names and places files where I want them, 
+updates metadata and project logs
+
+Script does not verify success (e.g. if the image is mountable and files can be extracted/performed). That process is separate.
+Also working on method to test streams against a variety of image types (if image type unknown), suggestions welcome. 
+
+note: this is super environment-specific, institution-specific, but could be modified.
