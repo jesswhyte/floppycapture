@@ -75,7 +75,7 @@ mediaType = args.mediatype
 callNum = args.call
 callDum=callNum.replace('.','-')
 # line below added: removes the DISK[#] identifier needed for callDum, but only after creating callDum
-callNum = re.sub(r".DISK\d","",callNum)
+callNum = re.sub(r".DISK\w","",callNum)
 catKey = args.key
 label = args.transcript
 dir = args.dir
@@ -282,8 +282,8 @@ print(bcolors.GREENBLOCK + "Using:\nTitle: %s\nImprint: %s\nCatKey: %s" % (title
 # TODO: write as subprocess, once choose b/w ffmpeg and fswebcam
 
 picName = callDum + ".jpg"
-#fswebcampicParameters = " --jpeg 95 -r 800x600 --no-banner -S 5 "+outputPath+picName
-picParameters = " -f video4linux2 -s 800x600 -q:v 1 -i /dev/video0 -ss 0:0:6 -frames 1 -hide_banner -loglevel panic "+outputPath+picName
+#fswebcampicParameters = " --jpeg 95 -r 1600x1200 --no-banner -S 5 "+outputPath+picName
+picParameters = " -f video4linux2 -s 1600x1200 -i /dev/video0 -ss 0:0:6 -frames 1 -hide_banner -loglevel panic "+outputPath+picName
 #os.system("fswebcam"+ picParameters)
 
 print("-Wait please...taking picture...")
