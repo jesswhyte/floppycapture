@@ -36,6 +36,7 @@ args = parser.parse_args()
 
 ## get all my call Num/Call Dum variations down
 callNum = args.call
+callNum = callNum.upper()
 callDum = callNum.replace('.','-')
 callNum = re.sub(r".DISK\d","",callNum)
 callUrl = str(

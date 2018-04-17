@@ -72,7 +72,8 @@ drive = "d0"
 date = datetime.datetime.today().strftime('%Y-%m-%d')
 lib = args.lib
 mediaType = args.mediatype
-callNum = args.call
+callNum = args.call 
+callNum = callNum.upper()
 callDum=callNum.replace('.','-')
 # line below added: removes the DISK[#] identifier needed for callDum, but only after creating callDum
 callNum = re.sub(r".DISK\w","",callNum)
