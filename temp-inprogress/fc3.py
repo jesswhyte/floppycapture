@@ -1,7 +1,5 @@
-#!/usr/bin/python3
-
-### IN PROGRESS
-### environment-specific Python3 script to walk through floppy disk capture workflow
+N PROGRESS
+### environment-specific Python3 script to walk through floppy disk capture workflow for gen collections items (i.e. items with callNum)
 ### uses qtv4l document scanner (need ffmpeg) - still working out specifics
 ### uses dtc (kryoflux floppy controller card software)
 ### Jess, Jan 2018
@@ -54,12 +52,12 @@ parser.add_argument(
 parser.add_argument(
 	'-k', '--key', type=str,
 	help='Catkey')
-parser.add_argument(
-	'-t', '--transcript', type=str,
-	help='Transcript of label', required=False)
-parser.add_argument(
-	'-n','--note', type=str,
-	help='catalog note', required=False)
+#parser.add_argument(
+#	'-t', '--transcript', type=str,
+#	help='Transcript of label', required=False)
+#parser.add_argument(
+#	'-n','--note', type=str,
+#	help='catalog note', required=False)
 
 ## Array for all args passed to script
 args = parser.parse_args()
@@ -69,26 +67,27 @@ args = parser.parse_args()
 ###############################
 
 drive = "d0"
+note = "supplementary"
 date = datetime.datetime.today().strftime('%Y-%m-%d')
 lib = args.lib
 mediaType = args.mediatype
-callNum = args.call
-callDum=callNum.replace('.','-')
-# line below removes the DISK[#] identifier needed for callDum, but only *after* creating callDum
-callNum = re.sub(r".DISK\d","",callNum)
+callNum = args.call 
+callNum = callNum.upper() #makes callNum uppercase
+callDum=callNum.replace('.','-') #replaces . in callNum with - for callDum
+callNum = re.sub(r".DISK\w","",callNum) # removes the DISK[#] identifier needed for callDum, but only after creating callDum
 catKey = args.key
-label = args.transcript
+#label = args.transcript
 dir = args.dir
 callUrl = str(
 	"https://search.library.utoronto.ca/search?N=0&Ntx=mode+matchallpartial&Nu=p_work_normalized&Np=1&Ntk=p_call_num_949&format=json&Ntt=%s" % callNum
 )
-note=args.note
+#note=args.note
 
 #################################
 ########## CLASS STUFF ##########
 #################################
 
-# font colors, visit https://gist.github.com/vratiu/9780109 for a nice guide to the color codes
+# font colors for notices/warnings, visit https://gist.github.com/vratiu/9780109 for a nice guide to the color codes if you want to change
 class bcolors:
     OKGREEN = '\033[92m' #green
     INPUT = '\033[93m' #yellow, used for when user input required
@@ -103,41 +102,31 @@ class bcolors:
 ############ FUNCTIONS #############
 ####################################
 
-### TODO: rewrite kfStream as subprocess, temp)
+# takes stream only, reverted back to os.system for easier reading of output on screen 
 def kfStream():
-	p = subproc.Popen(
-		[
-			'dtc',
-			"-%s" % drive,
-			"-fstreams/%s/%s_stream" % (callDum, callDum),
-			'-i0',
-			'-t2',
-			'-p'
-		],stdout=subproc.PIPE,stderr=subproc.PIPE
-	)
-	output, errors = p.communicate()
-	outfile = str("%s%s_capture.log" % (outputPath, callDum))
-	errfile = str("%s%s_errors.log" % (outputPath, callDum))
-	with open(outfile, 'wb') as f:
-		f.write(output)
-	if errors:
-		with open(errfile, 'wb') as f:
-			f.write(errors)
+	go = input(bcolors.INPUT+"Please insert disk and hit Enter"+bcolors.ENDC)
+	#command below explained: 
+	#-i0 = take stream, 
+	#-i4 -i9 flags say test stream against apple 400/800k and mfm, but don't actually make img
+	#-t2 = make two attempts or passes
+	#-p = force creation of directories in path
+	#-l8 = restrict output to formatting info only
+	# | tee = also output to a log, please
+	os.system(
+	 	"dtc -"+drive+" -fstreams/"+callDum+"/"
+	 	+callDum+"_stream -i0 -i4 -i9 -t2 -l8 -p | tee "
+	 	+outputPath+callDum+"_capture.log")
 
-	# os.system(
-	# 	"dtc -"+drive+" -fstreams/"+callDum+"/"
-	# 	+callDum+"_stream -i0 -t2 -p | tee "
-	# 	+outputPath+callDum+"_capture.log")
-
-#takes an existing stream, attemps to make image based on given fileSystem [currently not in use]
+#takes existing stream, attemps to make image based on given fileSystem 
 def kfImage(fileSystem):
 	os.system(
 		"dtc -fstreams/"+callDum+"/"
 		+callDum+"_stream00.0.raw -i0 -f"+outputPath+callDum+"_disk.img -"
 		+fileSystem+" -m1")
 
-#Takes existing preservation stream + attempts to create i4 or MFM disk image
+#Takes preservation stream + attempts to create i4 aka MFM disk image
 def kfi4():
+	go = input(bcolors.INPUT+"Please insert disk and hit Enter"+bcolors.ENDC)
 	os.system(
 		"dtc -"+drive+" -fstreams/"+callDum+"/"
 		+callDum+"_stream -i0 -f"+outputPath+callDum+
@@ -177,104 +166,131 @@ def disambiguate_records(d):
 
 	return ck
 
+# update the notes
+def updateNoteLong():
+	global note
+	print("\nDISK NOTES")
+	print("Note currently set to: \""+bcolors.OKGREEN+note+bcolors.ENDC+"\"")
+	print("TIP: Notes are for noting catalog flags or imaging failures")
+	print("TIP: Try to be brief and consistent")
+	print("TIP: If the resource is \"stand-alone\", please change the note")
+	noteupdate = input(bcolors.INPUT+"If you would like to CHANGE the disk notes, please do so now, otherwise hit Enter: "+bcolors.ENDC)
+	if noteupdate == "":
+		note = str(note)
+		print("Note unchanged...")
+	else:
+		note = noteupdate
+		print("Note has been changed to: " + bcolors.OKGREEN + note + bcolors.ENDC)
+
+def updateNote():
+	global note
+	noteupdate = input(bcolors.INPUT+"If you would like to ADD to the disk notes, please do so, otherwise hit Enter: "+bcolors.ENDC)
+	if noteupdate == "":
+		note = str(note)
+		print("Note unchanged...")
+	else:
+		note = note + " -- " + noteupdate
+		print("Note has been changed to: " + bcolors.OKGREEN + note + bcolors.ENDC)
+
+
 ########################
 #####  THE GOODS  ######
 ########################
 
-### Check -m flag, set drive # accordingly
+### Change working directory to -d flag setting
+if not os.path.exists(dir):
+	os.makedirs(dir)
+os.chdir(dir)
+
+### Check media flag (-m), set drive
 if mediaType == "3.5":
 	drive = "d0"
 elif mediaType == "5.25":
 	drive = "d1"
 
-### Change the working directory to the one specificed by -d flag and create it if it doesn't exist
-if not os.path.exists(dir):
-	os.makedirs(dir)
-	
-os.chdir(dir)
+### Check if disk image path already exists (note: looks to CAPTURED/LIB/CALLDUM/ ***NOT*** /CAPTURED/STREAMS/)
+### TO DO: should be adapted to check *all* /LIB/CALLDUM/ paths? to avoid dupes across libraries?
 
-### Create directory for disk output based on /LIB/callDum/
 outputPath = lib+"/"+callDum+"/"
-
-### If outputPath exists, then ask whether or not to proceed and how
-
 if os.path.exists(outputPath):
 	replacePath = input(bcolors.INPUT+"Call num path already exists, proceed anyway y/n? "+bcolors.ENDC)
 	if replacePath.lower() == 'y' or replacePath.lower() == 'yes':
-		# replaceStream *only* is an option b/c sometimes I want to keep the original photo/metadata, but want to try 		
+		# replaceStreamOnly is an input option, because sometimes I want to keep original photo/metadata, but want to try 			
 		# replacing what might have been a previously unsuccessful capture, e.g. if there is another copy of disk
-		replaceStream = input(bcolors.INPUT+"Replace stream/image **ONLY** y/n? "+bcolors.ENDC)
-		# if replaceStream == Y, then skip right to image disk and sys.exit		
-		if replaceStream.lower() == 'y' or replaceStream.lower() == 'yes':
-			go = input(bcolors.INPUT+"Please insert disk and hit Enter"+bcolors.ENDC)
-			# if -i flag set, default to stream + i4 (MFM) image			
+		replaceStreamOnly = input(bcolors.INPUT+"Replace stream/image **ONLY** y/n? "+bcolors.ENDC)
+		if replaceStreamOnly.lower() == 'y' or replaceStreamOnly.lower() == 'yes':
 			if args.i4:
 				kfi4()
-			# otherwise, take a stream and prompt for the filesystem flag (e.g. i4, i9, etc.)
 			else:
 				kfStream()
 				fileSystem = input(bcolors.INPUT+"Which filesytem? "+bcolors.ENDC)
 				kfImage(fileSystem)
-			sys.exit("-Stream/image replaced. No other entries updated. Exiting...")
-		# if replaceStream *only* == N, then carry on as normal and replace every thing (photo, metadata, etc)
-		if replaceStream.lower() == 'n' or replaceStream.lower() =='no':
-			replaceStream == 'no'
+			sys.exit("Stream/image replaced. No other entries updated. Exiting...")
+		if replaceStreamOnly.lower() == 'n' or replaceStreamOnly.lower() =='no':
 			print(bcolors.OKGREEN+"Replacing "+callDum+" ..."+bcolors.ENDC)
-	# if replacePath == n, then bow out of the whole thing
-	if replacePath.lower() == 'n' or replacePath.lower() == 'no':
-		sys.exit("-No entries updated. Exiting...")
-
-# if outputPath doesn't exist, make it
-if not os.path.exists(outputPath):
+	if replacePath.lower() == 'n' or replacePath.lower() == 'no': 
+		sys.exit("No entries updated. Exiting...")
+else:
 	os.makedirs(outputPath)
 
-print("-Searching callNum: "+callNum+"...")
+
+### Communicate we're going to search the callNum as given...
+print("Searching callNum: "+callNum+"...")
 
 ### GET THE TITLE AND OTHER METADATA
-# makes a dictionary out of the response from callUrl
-# extracts the catkey (if not already provided) to make catUrl
-# will write title, etc later in the json dump
 
-# if -k and catKey are not provided, then do the following to get it...
-if not catKey:
+### do a catcall based on -k catkey or -c callNum
+
+if not catKey: #get that catkey
 	call_dic = get_json_data(callUrl)
 	num_results = call_dic['result']['numResults']
 
 	# If there are multiple records, prompt for which one is correct
 	if num_results > 1:
-		# From what we've seen, there should only be one record, so fail out if >1
+		# From what we've seen, there should only be one record
 		if len(call_dic['result']['records']) > 1:
-			# os.rmdir(dir) to backtrack on fail
-			os.rmdir(dir)
-			# exit with fail message
-			sys.exit(bcolors.FAIL+'There\'s more than one record. Script is not designed to handle this case.'+bcolors.ENDC)
+			sys.exit(bcolors.FAIL+'There\'s more than one record. Script is not designed to handle this case. Please set disk aside or consult catalog'+bcolors.ENDC)
 		results_dict = get_json_data(call_dic['result']['records'][0]['jsonLink'])
-		# catKey = results from the disambiguate_records function if # of results >1		
 		catKey = disambiguate_records(results_dict)
-	else:
+	else: #option to take catkey given with -k flag (e.g. if you want to set a custom callnum)
 		catKey = call_dic['result']['records'][0]['catkey']
 
-catUrl = str("https://search.library.utoronto.ca/details?%s&format=json" % catKey)
+catUrl = str("https://search.library.utoronto.ca/details?%s&format=json" % catKey) #set catalog search url based on catkey
 
+os.system("curl \'"+catUrl+"\' | jq .") # display json output from callNum
+
+correctRecord = input(bcolors.INPUT+"Is this the correct record (n to exit)? "+bcolors.ENDC) #ask if this is the correct record
+if correctRecord.lower() == 'n' or correctRecord.lower() == 'no':
+	sys.exist("No entries updated. Exiting...")
+
+
+# make a dictionary out of the response from catUrl
+# extracts the title value from title key from that dictionary
+# will write later in the json dump
+
+#update dictionary for json write
 cat_dic = get_json_data(catUrl)
 title = cat_dic['record']['title']
 imprint = cat_dic['record']['imprint']
 catkey = cat_dic['record']['catkey']
-techdetails = cat_dic['record']['fullDetails']['technical details']
-callnote = cat_dic['record']['fullDetails']['note']
-holdings = cat_dic['record']['holdings']
-eResources = ['record']['eResources']
-total = ['record']['endecaItemsTotal']
-description = ['record']['description']
-catformat = ['record']['format'] 
+description = cat_dic['record']['description']
 
 ### PRINT THE METADATA
 ## x1b stuff is just to make it show up a different color so it's noticeable
-print(bcolors.GREENBLOCK + 
-"Using:\nTitle: %s\nImprint: %s\nCatKey: %s" 
-% (title, imprint, catkey) 
-+ bcolors.ENDGB)
 
+print(bcolors.GREENBLOCK + "Confirming:\nTitle: %s\nImprint: %s\nCatKey: %s \nDescription: %s" % (title, imprint, catkey, description) + bcolors.ENDGB)
+
+print("\nDISK LABEL TRANSCRIPTION")
+print("TIP: Avoid duplicating information from cat record (e.g. authors, publishers, ISBNs, etc.)")
+#print("TIP: Put your transcription in quotes")
+print("TIP: Avoid quotes please")
+print("EXAMPLE: Functions - Programs - Chapter Code - Nodal Demo -- Software to accompany Applied Electronic Engineering with Mathematica -- Requires MATLAB Version 2+ and DOS 2.x")
+label=input(bcolors.INPUT+"Please enter the disk label transcription: "+bcolors.ENDC)
+
+
+### update note (set to default as supplementary)
+
+updateNoteLong()
 
 ### TAKE A PICTURE
 # Note: fswebcam defaults to /dev/video0, if device not found...
@@ -284,15 +300,19 @@ print(bcolors.GREENBLOCK +
 
 ### NOTE Mar 10 2018 - Trying out ffmpeg instead of fswebcam, fswebcam commands commented out
 # TODO: write as subprocess, once choose b/w ffmpeg and fswebcam
+#fswebcampicParameters = " --jpeg 95 -r 1600x1200 --no-banner -S 5 "+outputPath+picName ##old fswebcam command
+#os.system("fswebcam"+ picParameters) ###old fswebcam command
 
 picName = callDum + ".jpg"
-#fswebcampicParameters = " --jpeg 95 -r 800x600 --no-banner -S 5 "+outputPath+picName
-picParameters = " -f video4linux2 -s 800x600 -i /dev/video0 -ss 0:0:6 -frames 1 -hide_banner -loglevel panic "+outputPath+picName
-#os.system("fswebcam"+ picParameters)
 
-print("-Wait please...taking picture...")
+picParameters = " -f video4linux2 -s 1600x1200 -i /dev/video0 -ss 0:0:6 -frames 1 -hide_banner -loglevel panic "+outputPath+picName
+
+gopic = input(bcolors.INPUT+"Please place disk for picture and hit Enter"+bcolors.ENDC)
+
+print("Wait please...taking picture...")
 os.system("ffmpeg"+picParameters)
 
+### Double check pic worked and warn if it didn't:
 if os.path.exists(
 	outputPath+picName):
 	print("-Pic: %s%s taken" % (outputPath,picName))
@@ -321,9 +341,6 @@ with open('TEMPmetadata.json','w+') as metadata:
 
 ### KRYOFLUX - GET A PRESERVATION STREAM
 
-## Pause and give user time to put disk in 
-go = input(bcolors.INPUT+"Please insert disk and hit Enter"+bcolors.ENDC)
-
 ## take the stream only if it doesn't already exist
 if os.path.exists("streams/"+callDum+"/"+callDum+"_stream00.0.raw"):
 	replaceStream = input(bcolors.INPUT+"streams/"+callDum+"/"+callDum+"_stream00.0.raw exists, replace y/n? "+bcolors.ENDC)
@@ -349,9 +366,7 @@ else:
 		# take preservation stream, then ask which filesystem, e.g. i9 or i4, etc.		
 		kfStream()
 		fileSystem = input(bcolors.INPUT+"Which filesytem? "+bcolors.ENDC)
-		if not os.path.exists(outputPath+callDum+"_disk.img"):	
-			# create image from stream, based on provided filesystem	
-			kfImage(fileSystem)
+		kfImage(fileSystem)
 	
 
 #########################################
@@ -363,30 +378,24 @@ metadata.close()
 ### Rename our metadata.txt file
 newMetadata = callDum + '.json'
 os.rename('TEMPmetadata.json', outputPath + newMetadata)
-print("-Updated metadata: "+ outputPath + newMetadata)
+print("Updated metadata file: "+ outputPath + newMetadata)
 
 ### Update master log
 ## TODO: this should really use csv library, I was lazy
 
 ## User asked if they'd like to update the notes they entered
-noteupdate = input(bcolors.INPUT+"If you would like to update the disk notes (currently: "+bcolors.OKGREEN+note+bcolors.ENDC+bcolors.INPUT+"), please re-enter, otherwise hit Enter: "+bcolors.ENDC)
-if noteupdate == "":
-	note = note
-	print("-Note unchanged...")
-else:
-	note = noteupdate
-	print("-Note has been updated to: " + bcolors.OKGREEN + note + bcolors.ENDC)
+updateNote()
 
 ## Open and update the masterlog - projectlog.csv
-log = open('TESTTESTTEST-projectlog.csv','a+')
-print("-Updating log...")
+log = open('projectlog.csv','a+')
+print("Updating log...")
 
 ## changing callDum back to '.' for log entry and to retain the DISK[#] if applicable
 callLog=callDum.replace('-','.')
 
 log.write(
 	"\n"+lib+","+callLog+","+str(catKey)+","+mediaType+
-	",\""+str(title)+"\","+"\""+label+"\",\""+note+"\"")
+	",\""+str(title)+"\",\""+label+"\",\""+note+"\"")
 if os.path.exists(
 	outputPath+picName):
 	log.write(",pic=OK")
@@ -402,6 +411,6 @@ else:
 ### Close master log
 log.close()
 
-sys.exit ("-Exiting...")
+sys.exit ("Exiting...")
 
 

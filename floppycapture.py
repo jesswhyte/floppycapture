@@ -104,31 +104,18 @@ class bcolors:
 ############ FUNCTIONS #############
 ####################################
 
-### TODO: rewrite kfStream as subprocess, temp)
+# takes stream only, reverted back to os.system for easier reading of output on screen 
 def kfStream():
-	p = subproc.Popen(
-		[
-			'dtc',
-			"-%s" % drive,
-			"-fstreams/%s/%s_stream" % (callDum, callDum),
-			'-i0',
-			'-t2',
-			'-p'
-		],stdout=subproc.PIPE,stderr=subproc.PIPE
-	)
-	output, errors = p.communicate()
-	outfile = str("%s%s_capture.log" % (outputPath, callDum))
-	errfile = str("%s%s_errors.log" % (outputPath, callDum))
-	with open(outfile, 'wb') as f:
-		f.write(output)
-	if errors:
-		with open(errfile, 'wb') as f:
-			f.write(errors)
-
-	# os.system(
-	# 	"dtc -"+drive+" -fstreams/"+callDum+"/"
-	# 	+callDum+"_stream -i0 -t2 -p | tee "
-	# 	+outputPath+callDum+"_capture.log")
+	#command explained: -i0 = take stream, -i4 -i9 flags say test against apple 400/800k and mfm
+	#-t2 = make two attempts or passes
+	#-p = force creation of directories in path
+	#-l8 = restrict output to formatting info only
+	# | tee = also output to a log, please
+	os.system(
+	 	"dtc -"+drive+" -fstreams/"+callDum+"/"
+	 	+callDum+"_stream -i0 -i4 -i9 -t2 -l8 -p | tee "
+	 	+outputPath+callDum+"_capture.log")
+	
 
 #takes existing stream, attemps to make image based on given fileSystem [not in use]
 def kfImage(fileSystem):

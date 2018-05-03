@@ -5,11 +5,13 @@ Workflow script to automate ingest of floppy disks (3.5" and 5.25") using kryofl
 Basically, script takes some args like media type and call number, 
 takes a picture of the disk, 
 pulls metadata from json returned from catalog call, 
-runs appropriate kryoflux dtc commands (takes stream + MFM by default), 
+runs appropriate kryoflux dtc commands (takes stream + MFM by default, can be adapted to take stream first (while trying i4 and i9) and then prompts for type to try for img), 
 names and places files where I want them, 
-updates metadata and project logs
+updates metadata with info pulled from catalog and inputted re disk, and updates project logs
 
 Script does not verify success (e.g. if the image is mountable and files can be extracted/performed). That process is separate.
 Also working on method to test streams against a variety of image types (if image type unknown), suggestions welcome. 
 
-note: this is super environment-specific, institution-specific, but could be modified.
+note: this is super environment-specific, institution-specific (e.g. calls the UTL catalog), but could be modified.
+
+note: for something more generic that does NOT try to pull any catalog data or take a photograph, try /temp-inprogress/floppy-noclue.py

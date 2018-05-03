@@ -1,5 +1,9 @@
 #!/usr/bin/python3
 
+
+##### TO DO ######
+# -adapt to allow for -k entry (which would override -c entry and provide callNum)
+
 import sys
 import argparse 
 import os
