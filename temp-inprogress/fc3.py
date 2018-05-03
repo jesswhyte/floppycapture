@@ -1,4 +1,4 @@
-N PROGRESS
+#IN PROGRESS
 ### environment-specific Python3 script to walk through floppy disk capture workflow for gen collections items (i.e. items with callNum)
 ### uses qtv4l document scanner (need ffmpeg) - still working out specifics
 ### uses dtc (kryoflux floppy controller card software)
@@ -230,8 +230,6 @@ if os.path.exists(outputPath):
 			print(bcolors.OKGREEN+"Replacing "+callDum+" ..."+bcolors.ENDC)
 	if replacePath.lower() == 'n' or replacePath.lower() == 'no': 
 		sys.exit("No entries updated. Exiting...")
-else:
-	os.makedirs(outputPath)
 
 
 ### Communicate we're going to search the callNum as given...
@@ -262,6 +260,8 @@ os.system("curl \'"+catUrl+"\' | jq .") # display json output from callNum
 correctRecord = input(bcolors.INPUT+"Is this the correct record (n to exit)? "+bcolors.ENDC) #ask if this is the correct record
 if correctRecord.lower() == 'n' or correctRecord.lower() == 'no':
 	sys.exist("No entries updated. Exiting...")
+else:
+	os.makedirs(outputPath)
 
 
 # make a dictionary out of the response from catUrl
