@@ -1,8 +1,7 @@
 #!/usr/bin/python3
 
 ### IN PROGRESS
-### environment-specific Python3 script to walk through floppy disk capture workflow
-### uses qtv4l document scanner (need ffmpeg) - still working out specifics
+### Python3 script to walk through floppy disk capture workflow
 ### uses dtc (kryoflux floppy controller card software)
 ### Jess, Jan 2018
 
@@ -15,11 +14,8 @@ import argparse
 import os
 import subprocess as subproc
 import datetime
-import json
-import urllib
 import re
-from urllib.request import urlopen
-from collections import OrderedDict
+
 
 #######################
 ###### ARGUMENTS ######
@@ -28,16 +24,9 @@ from collections import OrderedDict
 parser = argparse.ArgumentParser(
 	description ="Script to walk through floppy disk capture workflow, Jan 2018")
 parser.add_argument(
-	'-l', '--lib', type=str,
-	help='Library, for a list of library IDs, visit ufot.me/libs ', 
-	required=True,
-	choices=['ARCH','ART','ASTRO','CHEM','CRIM',
-	'DENT','OPIRG','EARTH','EAL','ECSL','FCML',
-	'FNH','GERSTEIN','INFORUM','INNIS','KNOX',
-	'LAW','MDL','MATH','MC','PONTIF','MUSIC',
-	'NEWCOLLEGE','NEWMAN','OISE','PJRC','PHYSICS',
-	'REGIS','RCL','UTL','ROM','MPI','STMIKES',
-	'TFRBL','TRIN','UC','UTARMS','UTM','UTSC','VIC'])
+	'-c', '--collection', type=str,
+	help='collection/accession/box/whatever', 
+	required=True)
 parser.add_argument(
         '-d','--dir', type=str,
         help='Start directory, e.g. /home/jess/CAPTURED', required=True)
@@ -53,7 +42,7 @@ parser.add_argument(
 	help='Transcript of label', required=False)
 parser.add_argument(
 	'-n','--note', type=str,
-	help='catalog note', required=False)
+	help='capture notes', required=False)
 parser.add_argument(
 	'-k', '--key',type=str,
 	help='diskID',required=True)
@@ -67,7 +56,7 @@ args = parser.parse_args()
 
 drive = "d0"
 date = datetime.datetime.today().strftime('%Y-%m-%d')
-lib = args.lib
+collection = args.collection
 mediaType = args.mediatype
 key = args.key
 label = args.transcript
@@ -95,28 +84,6 @@ class bcolors:
 
 ### TODO: rewrite kfStream as subprocess, temp)
 def kfStream():
-	#p = subproc.Popen(
-	#	[
-	#		'dtc',
-	#		"-%s" % drive,
-	#		"-fstreams/%s/%s_stream" % (key,key),
-	#		'-i0', #stream file
-	#		'-i4', #MFM 40/80 tracks SS/DS DD/HD 300, MFM
-	#		'-i9', #Apple DOS 400/800K
-	#		'-i2', #CT RAW DS, DD, 300, MFM
-	#		'-t2',
-	#		'-p'
-	#	],stdout=subproc.PIPE,stderr=subproc.PIPE
-	#)
-	#output, errors = p.communicate()
-	#outfile = str("%s%s_capture.log" % (outputPath, key))
-	#errfile = str("%s%s_errors.log" % (outputPath, key))
-	#with open(outfile, 'wb') as f:
-	#	f.write(output)
-	#if errors:
-	#	with open(errfile, 'wb') as f:
-	#		f.write(errors)
-
 	os.system(
 		"dtc -"+drive+" -fstreams/"+key+"/"
 	 	+key+"_stream -i0 -i4 -i9 -i2 -t2 -l8 -p | tee "
@@ -154,7 +121,7 @@ if not os.path.exists(dir):
 os.chdir(dir)
 
 ### Create directory for output if it doesn't exist
-outputPath = lib+"/"+key+"/"
+outputPath = collection+"/"+key+"/"
 
 ### JW NOTE: Check if os.path exists and then ask whether or not to proceed and how
 
@@ -187,6 +154,7 @@ if not os.path.exists(outputPath):
 go = input(bcolors.INPUT+"Please insert disk and hit Enter"+bcolors.ENDC)
 
 ## take the stream only if it doesn't already exist
+## note: streams do not go in diskID directory
 if os.path.exists("streams/"+key+"/"+key+"_stream00.0.raw"):
 	replaceStream = input(bcolors.INPUT+"streams/"+key+"/"+key+"_stream00.0.raw exists, replace y/n? "+bcolors.ENDC)
 	if replaceStream.lower() == 'y' or replaceStream.lower() == 'yes':
@@ -237,11 +205,8 @@ else:
 log = open('projectlog.csv','a+')
 print("-Updating log...")
 
-## changing key back to '.' for log entry and to retain the DISK[#] if applicable
-callLog=key.replace('-','.')
-
 log.write(
-	"\n"+lib+","+callLog+","+key+","+mediaType+
+	"\n"+collection+","+key+","+mediaType+
 	","+"\""+label+"\",\""+note+"\"")
 if os.path.exists(
 	outputPath+key+"_disk.img"):
