@@ -1,19 +1,24 @@
-Jess Whyte, 2018
+Jess Whyte and Andy Foster, 2018
 Scripts for floppy intake work at UTL
 Feel free to take/adapt/fork/whatever, but please cite/acknowledge, thanks
 
 ****fc.py****
 
-FloppyCapture, or fc.py, is a workflow script to ingest floppy disks (3.5" and 5.25") using a kryoflux two-drive setup and attached camera. 
+FloppyCapture, or fc.py, is a workflow script to ingest floppy disks (3.5" and 5.25") using a kryoflux two-drive setup,
+and attached camera. 
 
-note: this is an environment-specific, institution-specific (e.g. calls the UTL catalog) script, but could be modified.
+note: this is an environment-specific, institution-specific (e.g. calls the UTL catalog) script, but could be modified. For a more generalized version, see floppy-nocall.py below. 
 
-usage: fc.py [-h] -l            {ARCH,ART,ASTRO,CHEM,CRIM,DENT,OPIRG,EARTH,EAL,ECSL,FCML,FNH,GERSTEIN,INFORUM,INNIS,KNOX,LAW,MDL,MATH,MC,PONTIF,MUSIC,NEWCOLLEGE,NEWMAN,OISE,PJRC,PHYSICS,REGIS,RCL,UTL,ROM,MPI,STMIKES,TFRBL,TRIN,UC,UTARMS,UTM,UTSC,VIC}
+usage: fc.py [-h] -l            {ARCH,ART,ASTRO,CHEM,CRIM,DENT,OPIRG,EARTH,EAL,ECSL,FCML,FNH,GERSTEIN,
+                                INFORUM,INNIS,KNOX,LAW,MDL,MATH,MC,PONTIF,MUSIC,NEWCOLLEGE,NEWMAN,OISE,PJRC,
+                                 PHYSICS,REGIS,RCL,UTL,ROM,MPI,STMIKES,TFRBL,TRIN,UC,UTARMS,UTM,UTSC,VIC}
              -d DIR [-i] -m {3.5,5.25} -c CALL [-k KEY]
 
 arguments:
   -h, --help            show this help message and exit
-  -l, --lib {ARCH,ART,ASTRO,CHEM,CRIM,DENT,OPIRG,EARTH,EAL,ECSL,FCML,FNH,GERSTEIN,INFORUM,INNIS,KNOX,LAW,MDL,MATH,MC,PONTIF,MUSIC,NEWCOLLEGE,NEWMAN,OISE,PJRC,PHYSICS,REGIS,RCL,UTL,ROM,MPI,STMIKES,TFRBL,TRIN,UC,UTARMS,UTM,UTSC,VIC}
+  -l, --lib {ARCH,ART,ASTRO,CHEM,CRIM,DENT,OPIRG,EARTH,EAL,ECSL,FCML,FNH,GERSTEIN,
+            INFORUM,INNIS,KNOX,LAW,MDL,MATH,MC,PONTIF,MUSIC,NEWCOLLEGE,NEWMAN,OISE,PJRC,
+            PHYSICS,REGIS,RCL,UTL,ROM,MPI,STMIKES,TFRBL,TRIN,UC,UTARMS,UTM,UTSC,VIC}
                         LibraryID, for a list of library IDs, visit ufot.me/libs
   -d DIR, --dir DIR     Start directory, e.g. /home/jess/CAPTURED
   -i, --i4              use flag to default to i4/MFM
@@ -30,17 +35,21 @@ How fc.py works:
 -creates disk folder (callNum) under designated library (designated by -l argument)
 -prompts for optional label transcription
 -prompts for "notes" 
--prompts for photo, takes picture of disk (set-up uses an ipevo doc cam + ffmpeg, we just use it for documentation, could be adapted for a different photo setup)
--runs appropriate kryoflux dtc commands (takes stream + MFM if -i argument in place, if no -i argument, it will take stream (while trying i4 and i9) and then prompts user for i-type to try), 
+-prompts for photo, takes picture of disk (set-up uses an ipevo doc cam + ffmpeg, we just use it for documentation, 
+could be adapted for a different photo setup)
+-runs appropriate kryoflux dtc commands (takes stream + MFM if -i argument in place, if no -i argument, 
+it will take stream (while trying i4 and i9) and then prompts user for i-type to try), 
 -updates disk metadata with info pulled from catalog and disk capture
 -updates a master project log
 
-note: Script does not verify 'success' (i.e. if the image is mountable and files can be extracted/performed). That process is separate (see: https://github.com/jesswhyte/Disk-ID-md5deep/blob/master/disk-img-extraction for example)
+note: Script does not verify 'success' (i.e. if the image is mountable and files can be extracted/performed). 
+That process is separate (see: https://github.com/jesswhyte/Disk-ID-md5deep/blob/master/disk-img-extraction for example)
 
 
 ****helpers/floppy-nocall.py****
 
-floppy-nocall.py is a generalized version of fc.py (it doesn't attempt to call the UTL catalog or take a photo). It's a workflow script to ingest floppy disks (3.5" and 5.25") using a kryoflux two-drive setup. 
+floppy-nocall.py is a generalized version of fc.py (it doesn't attempt to call the UTL catalog or take a photo). 
+It's a workflow script to ingest floppy disks (3.5" and 5.25") using a kryoflux two-drive setup. 
 
 usage: floppy-nocall.py [-h] -c COLLECTION -d DIR [-i] -m {3.5,5.25}
                         [-t TRANSCRIPT] [-n NOTE] -k KEY
@@ -59,7 +68,8 @@ arguments:
   -k KEY, --key KEY     diskID
 
 
-Example command: python3 floppy-nocall.py -c Accession12345 -d /CAPTURED -m 3.5 -t "transcript of the disk label" -n "note: supplementary materials" -k Disk-000123
+Example command: 
+python3 floppy-nocall.py -c Accession12345 -d /CAPTURED -m 3.5 -t "transcript of the disk label" -n "note: supplementary materials" -k Disk-000123
 
 
 How floppy-nocall.py works:
@@ -67,11 +77,13 @@ How floppy-nocall.py works:
 -checks to see if you've already imaged a disk with that ID(key)
 -if exists, asks if you just want to replace the stream/img files (not update the log)
 -creates disk directory (key, aka diskID) under designated collection directory
--runs kryoflux dtc commands (takes stream + MFM if -i argument in place, if no -i argument, it will take stream (while trying i4 and i9) and then prompts user for i-type to try)
+-runs kryoflux dtc commands (takes stream + MFM if -i argument in place, if no -i argument, 
+it will take stream (while trying i4 and i9) and then prompts user for i-type to try)
 -prompts if you want to update your notes
 -updates a master project log.csv (in your -d directory)
 
-note: you may want to adjust the kryoflux functions and the dtc command parameters, e.g. mine are set to only make 2 tries and limit the log output. 
+note: you may want to adjust the kryoflux functions and the dtc command parameters, 
+e.g. mine are set to only make 2 tries and limit the log output. 
 
 ****helpers/catpull.py****
 

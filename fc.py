@@ -2,7 +2,7 @@
 ### environment-specific Python3 script to walk through floppy disk capture workflow for gen collections items (i.e. items with callNum)
 ### uses qtv4l document scanner (need ffmpeg) - still working out specifics
 ### uses dtc (kryoflux floppy controller card software)
-### Jess, Jan 2018
+### Jess Whyte and Andy Foster, Jan 2018
 
 #######################
 ###### IMPORTS  #######
