@@ -213,7 +213,7 @@ elif mediaType == "5.25":
 
 outputPath = lib+"/"+callDum+"/"
 if os.path.exists(outputPath):
-	replacePath = input(bcolors.INPUT+"Call num path already exists, proceed anyway y/n? "+bcolors.ENDC)
+	replacePath = input(bcolors.INPUT+"Call num path already exists, pls check .img + .jpg, proceed anyway y/n? "+bcolors.ENDC)
 	if replacePath.lower() == 'y' or replacePath.lower() == 'yes':
 		# replaceStreamOnly is an input option, because sometimes I want to keep original photo/metadata, but want to try 			
 		# replacing what might have been a previously unsuccessful capture, e.g. if there is another copy of disk
