@@ -1,6 +1,6 @@
 #IN PROGRESS
 ### environment-specific Python3 script to walk through floppy disk capture workflow for gen collections items (i.e. items with callNum)
-### uses qtv4l document scanner (need ffmpeg) 
+### uses qtv4l document scanner (need ffmpeg) - still working out specifics
 ### uses dtc (kryoflux floppy controller card software)
 ### Jess Whyte and Andy Foster, Jan 2018
 
@@ -17,9 +17,9 @@ import json
 import urllib
 import re
 import csv
-import pandas as pd
 from urllib.request import urlopen
 from collections import OrderedDict
+
 
 #######################
 ###### ARGUMENTS ######
@@ -104,36 +104,6 @@ class bcolors:
 ############ FUNCTIONS #############
 ####################################
 
-def checkStream():
-	if os.path.exists("streams/"+callDum+"/"+callDum+"_stream00.0.raw"):
-		replaceStream = input(bcolors.INPUT+"streams/"+callDum+"/"+callDum+"_stream00.0.raw exists, replace stream y/n? "+bcolors.ENDC)
-		if replaceStream.lower() == 'y' or replaceStream.lower() == 'yes':
-			if args.i4:
-				kfi4()
-			else:
-				kfStream()
-				fileSystem = input(bcolors.INPUT+"Which filesytem? "+bcolors.ENDC)
-				kfImage(fileSystem)		
-		else:
-			# if replaceStream=N, still ask if user wants to update metadata/master log
-			replaceImg = input(bcolors.INPUT+"replace disk image y/n? "+bcolors.ENDC)
-			if replaceImg.lower() == 'y':
-				fileSystem = input(bcolors.INPUT+"Which filesytem? "+bcolors.ENDC)
-				kfImage(fileSystem)		
-			else:
-				sys.exit()
-			
-	else:
-		print("stream does not exist")	
-		if args.i4:
-		# take preservation stream and MFM image at same time		
-			kfi4()
-		else:
-			# take preservation stream, then ask which filesystem, e.g. i9 or i4, etc.		
-			kfStream()
-			fileSystem = input(bcolors.INPUT+"Which filesytem? "+bcolors.ENDC)
-			kfImage(fileSystem)
-
 # takes stream only, reverted back to os.system for easier reading of output on screen 
 def kfStream():
 	go = input(bcolors.INPUT+"Please insert disk and hit Enter"+bcolors.ENDC)
@@ -148,7 +118,6 @@ def kfStream():
 	 	"dtc -"+drive+" -fstreams/"+callDum+"/"
 	 	+callDum+"_stream -i0 -i4 -i9 -t2 -l8 -p | tee "
 	 	+outputPath+callDum+"_capture.log")
-	os.system('spd-say "boop"')
 
 #takes existing stream, attemps to make image based on given fileSystem 
 def kfImage(fileSystem):
@@ -156,7 +125,6 @@ def kfImage(fileSystem):
 		"dtc -fstreams/"+callDum+"/"
 		+callDum+"_stream00.0.raw -i0 -f"+outputPath+callDum+"_disk.img -"
 		+fileSystem+" -m1")
-	os.system('spd-say "boop"')
 
 #Takes preservation stream + attempts to create i4 aka MFM disk image
 def kfi4():
@@ -165,7 +133,6 @@ def kfi4():
 		"dtc -"+drive+" -fstreams/"+callDum+"/"
 		+callDum+"_stream -i0 -f"+outputPath+callDum+
 		"_disk.img -i4 -t1 -l8 -p | tee "+outputPath+callDum+"_capture.log")
-	os.system('spd-say "boop"')
 	
 #get some json from a URL
 def get_json_data(url):
@@ -245,29 +212,21 @@ elif mediaType == "5.25":
 
 ### Check if disk image path already exists (note: looks to CAPTURED/LIB/CALLDUM/ ***NOT*** /CAPTURED/STREAMS/)
 ### TO DO: should be adapted to check *all* /LIB/CALLDUM/ paths? to avoid dupes across libraries?
-### Check if entry exists in project log
-
-with open('projectlog.csv','r') as inlog:
-	reader=csv.reader(inlog)
-	for row in reader:
-		if not (row):
-			continue
-		else:
-			if callDum == row[1]:
-				print(bcolors.INPUT+"log entry exists for that call number"+bcolors.ENDC)	
-				print(row)		
-inlog.close()			
-			
 
 outputPath = lib+"/"+callDum+"/"
 if os.path.exists(outputPath):
-	replacePath = input(bcolors.INPUT+"Call num path already exists, proceed anyway y/n? "+bcolors.ENDC)
+	replacePath = input(bcolors.INPUT+"Call num path already exists, pls check .img + .jpg, proceed anyway y/n? "+bcolors.ENDC)
 	if replacePath.lower() == 'y' or replacePath.lower() == 'yes':
 		# replaceStreamOnly is an input option, because sometimes I want to keep original photo/metadata, but want to try 			
 		# replacing what might have been a previously unsuccessful capture, e.g. if there is another copy of disk
-		replaceStreamOnly = input(bcolors.INPUT+"Replace stream/image **ONLY** - no metadata - y/n? "+bcolors.ENDC)
+		replaceStreamOnly = input(bcolors.INPUT+"Replace stream/image **ONLY** y/n? "+bcolors.ENDC)
 		if replaceStreamOnly.lower() == 'y' or replaceStreamOnly.lower() == 'yes':
-			checkStream()
+			if args.i4:
+				kfi4()
+			else:
+				kfStream()
+				fileSystem = input(bcolors.INPUT+"Which filesytem? "+bcolors.ENDC)
+				kfImage(fileSystem)
 			sys.exit("Stream/image replaced. No other entries updated. Exiting...")
 		if replaceStreamOnly.lower() == 'n' or replaceStreamOnly.lower() =='no':
 			print(bcolors.OKGREEN+"Replacing "+callDum+" ..."+bcolors.ENDC)
@@ -301,14 +260,8 @@ catUrl = str("https://search.library.utoronto.ca/details?%s&format=json" % catKe
 os.system("curl \'"+catUrl+"\' | jq .") # display json output from callNum
 
 correctRecord = input(bcolors.INPUT+"Is this the correct record (n to exit)? "+bcolors.ENDC) #ask if this is the correct record
-
 if correctRecord.lower() == 'n' or correctRecord.lower() == 'no':
-	sys.exit("No entries updated. Exiting...")
-else:
-	try:	
-		os.makedirs(outputPath)
-	except:
-		print("Error making directory, likely exists")
+	sys.exist("No entries updated. Exiting...")
 
 
 # make a dictionary out of the response from catUrl
@@ -389,22 +342,38 @@ with open('TEMPmetadata.json','w+') as metadata:
 ### KRYOFLUX - GET A PRESERVATION STREAM
 
 ## take the stream only if it doesn't already exist
-
-checkStream()
-
-
+if os.path.exists("streams/"+callDum+"/"+callDum+"_stream00.0.raw"):
+	replaceStream = input(bcolors.INPUT+"streams/"+callDum+"/"+callDum+"_stream00.0.raw exists, replace y/n? "+bcolors.ENDC)
+	if replaceStream.lower() == 'y' or replaceStream.lower() == 'yes':
+		if args.i4:
+			kfi4()
+		else:
+			kfStream()
+			fileSystem = input(bcolors.INPUT+"Which filesytem? "+bcolors.ENDC)
+			kfImage(fileSystem)		
+	else:
+		# if replaceStream=N, still ask if user wants to update metadata/master log		
+		replaceMeta = input(bcolors.INPUT+"continue and replace metadata y/n? "+bcolors.ENDC)
+		if replaceMeta.lower() == 'n' or replaceMeta.lower() == 'no':
+			# if replaceMeta=N, close out and exit, otherwise carry on
+			metadata.close()
+			sys.exit ("-Exiting...")
+else:
+	if args.i4:
+		# take preservation stream and MFM image at same time		
+		kfi4()
+	else:
+		# take preservation stream, then ask which filesystem, e.g. i9 or i4, etc.		
+		kfStream()
+		fileSystem = input(bcolors.INPUT+"Which filesytem? "+bcolors.ENDC)
+		kfImage(fileSystem)
+	
 
 #########################################
 #### END MATTER and METADATA UPDATES ####
 #########################################
 
 metadata.close()
-
-replaceMeta = input(bcolors.INPUT+"replace metadata and create new log entry y/n? "+bcolors.ENDC)
-if replaceMeta.lower() == 'n' or replaceMeta.lower() == 'no':
-	# if replaceMeta=N, close out and exit, otherwise carry on
-	#metadata.close()
-	sys.exit ("-Exiting...")
 
 ### Rename our metadata.txt file
 newMetadata = callDum + '.json'
@@ -417,29 +386,49 @@ print("Updated metadata file: "+ outputPath + newMetadata)
 ## User asked if they'd like to update the notes they entered
 updateNote()
 
-## Open and update the masterlog - projectlog.csv
-log = open('projectlog.csv','a+')
-print("Updating log...")
+## changing callDum back to '.' for log entry and to retain the DISK[#] if applicable
+callLog=callDum.replace('-','.')
 
-log.write(
-	"\n"+lib+","+callDum+","+str(catKey)+","+mediaType+
-	",\""+str(title)+"\",\""+label+"\",\""+note+"\"")
+## create variables for pic/img success
 if os.path.exists(
 	outputPath+picName):
-	log.write(",pic=OK")
+	pic = "pic=OK"	
 else:
-	log.write(",pic=NO")
-
+	pic = "pic=NO"
 if os.path.exists(
 	outputPath+callDum+"_disk.img"):
-	log.write(",img=OK")
+	img = "img=OK"
 else:
-	log.write(",img=NO")
+	img = "img=NO"
+
+
+## Open and update the masterlog - projectlog.csv
+csvRow = [lib, callLog, str(catKey), mediaType, str(title), label, note, pic, img ]
+os.system("cp projectlog.csv projectlog_temp.csv")
+
+with open('projectlog.csv','r') as inlog, open('projectlog_temp.csv','w') as log:
+	reader=csv.reader(inlog)
+	for row in reader:
+		if callLog == row[1]:
+			print("removing old log entry")
+			writer=csv.writer(log, delimiter=',', quotechar='"')			
+			writer.writerow(csvRow)
+		else:	
+			log.close()			
+			with open('projectlog_temp.csv','a') as log:
+				writer=csv.writer(log, delimiter=',', quotechar='"')
+				writer.writerow(csvRow)
+
+os.system("cp projectlog_temp.csv projectlog.csv")
+os.system("rm projectlog_temp.csv")
+				
+
+
+		
 
 ### Close master log
 log.close()
 
 sys.exit ("Exiting...")
-
 
 
