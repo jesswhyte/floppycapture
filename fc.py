@@ -254,26 +254,28 @@ with open('projectlog.csv','r') as inlog:
 			continue
 		else:
 			if callDum == row[1]:
-				print(bcolors.INPUT+"log entry exists for that call number"+bcolors.ENDC)	
-				print(row)		
+				print(bcolors.INPUT+"log entry exists for that Call Number:"+bcolors.ENDC)	
+				print(row)
+				replacePath = input(bcolors.INPUT+"Proceed anyway y/n? "+bcolors.ENDC)
+				if replacePath.lower() == 'y' or replacePath.lower() == 'yes':
+					# replaceStreamOnly is an input option, because sometimes I want to keep original photo/metadata, but want to try 			
+					# replacing what might have been a previously unsuccessful capture, e.g. if there is another copy of disk
+					replaceStreamOnly = input(bcolors.INPUT+"Replace stream/image **ONLY** - no metadata - y/n? "+bcolors.ENDC)
+					if replaceStreamOnly.lower() == 'y' or replaceStreamOnly.lower() == 'yes':
+						checkStream()
+						sys.exit("Stream/image replaced. No other entries updated. Exiting...")
+					if replaceStreamOnly.lower() == 'n' or replaceStreamOnly.lower() =='no':
+						print(bcolors.OKGREEN+"Replacing "+callDum+" ..."+bcolors.ENDC)
+				if replacePath.lower() == 'n' or replacePath.lower() == 'no': 
+					sys.exit("No entries updated. Exiting...")	
+						
 inlog.close()			
 			
 
 outputPath = lib+"/"+callDum+"/"
-if os.path.exists(outputPath):
-	replacePath = input(bcolors.INPUT+"Call num path already exists, proceed anyway y/n? "+bcolors.ENDC)
-	if replacePath.lower() == 'y' or replacePath.lower() == 'yes':
-		# replaceStreamOnly is an input option, because sometimes I want to keep original photo/metadata, but want to try 			
-		# replacing what might have been a previously unsuccessful capture, e.g. if there is another copy of disk
-		replaceStreamOnly = input(bcolors.INPUT+"Replace stream/image **ONLY** - no metadata - y/n? "+bcolors.ENDC)
-		if replaceStreamOnly.lower() == 'y' or replaceStreamOnly.lower() == 'yes':
-			checkStream()
-			sys.exit("Stream/image replaced. No other entries updated. Exiting...")
-		if replaceStreamOnly.lower() == 'n' or replaceStreamOnly.lower() =='no':
-			print(bcolors.OKGREEN+"Replacing "+callDum+" ..."+bcolors.ENDC)
-	if replacePath.lower() == 'n' or replacePath.lower() == 'no': 
-		sys.exit("No entries updated. Exiting...")
 
+if os.path.exists(outputPath):
+	print("WARNING: outputPath already exists")
 
 ### Communicate we're going to search the callNum as given...
 print("Searching callNum: "+callNum+"...")
@@ -329,7 +331,6 @@ print(bcolors.GREENBLOCK + "Confirming:\nTitle: %s\nImprint: %s\nCatKey: %s \nDe
 
 print("\nDISK LABEL TRANSCRIPTION")
 print("TIP: Avoid duplicating information from cat record (e.g. authors, publishers, ISBNs, etc.)")
-#print("TIP: Put your transcription in quotes")
 print("TIP: Avoid quotes please")
 print("EXAMPLE: Functions - Programs - Chapter Code - Nodal Demo -- Software to accompany Applied Electronic Engineering with Mathematica -- Requires MATLAB Version 2+ and DOS 2.x")
 label=input(bcolors.INPUT+"Please enter the disk label transcription: "+bcolors.ENDC)
@@ -400,6 +401,9 @@ checkStream()
 
 metadata.close()
 
+## User asked if they'd like to update the notes they entered
+updateNote()
+
 replaceMeta = input(bcolors.INPUT+"replace metadata and create new log entry y/n? "+bcolors.ENDC)
 if replaceMeta.lower() == 'n' or replaceMeta.lower() == 'no':
 	# if replaceMeta=N, close out and exit, otherwise carry on
@@ -414,8 +418,6 @@ print("Updated metadata file: "+ outputPath + newMetadata)
 ### Update master log
 ## TODO: this should really use csv library, I was lazy
 
-## User asked if they'd like to update the notes they entered
-updateNote()
 
 ## Open and update the masterlog - projectlog.csv
 log = open('projectlog.csv','a+')
