@@ -7,7 +7,7 @@ Feel free to take/adapt/fork/whatever, but please cite/acknowledge, thanks
 FloppyCapture, or fc.py, is a workflow script to ingest floppy disks (3.5" and 5.25") using a kryoflux two-drive setup,
 and attached camera. 
 
-note: this is an environment-specific, institution-specific (e.g. calls the UTL catalog) script, but could be modified. For a more generalized version, see floppy-nocall.py below. 
+note: this is an environment-specific, institution-specific (e.g. calls the UTL catalog) script, but could be modified. For a more generalized version, see floppy-nocall.py under /helpers. 
 
 usage: fc.py [-h] -l            {ARCH,ART,ASTRO,CHEM,CRIM,DENT,OPIRG,EARTH,EAL,ECSL,FCML,FNH,GERSTEIN,
                                 INFORUM,INNIS,KNOX,LAW,MDL,MATH,MC,PONTIF,MUSIC,NEWCOLLEGE,NEWMAN,OISE,PJRC,
