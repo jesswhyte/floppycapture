@@ -5,6 +5,7 @@
 import sys
 import argparse 
 import os
+import re
 import subprocess
 import datetime
 import json
@@ -52,8 +53,10 @@ args = parser.parse_args()
 drive = "/dev/cdrom"
 date = datetime.datetime.today().strftime('%Y-%m-%d')
 lib = args.lib
-callNum = args.call
-callDum=callNum.replace('.','-')
+callNum = args.call 
+callNum = callNum.upper() #makes callNum uppercase
+callDum=callNum.replace('.','-') #replaces . in callNum with - for callDum
+callNum = re.sub(r".DISK\w","",callNum) # removes the DISK[#] identifier needed for callDum, but only after creating callDum
 catKey = args.key
 label = args.transcript
 dir = args.dir
@@ -66,10 +69,13 @@ note=args.note
 # scan CD
 
 def runScanner():
-	scanner="epson2:libusb:001:003"
 	tiff=str(outputPath+callDum+".tiff")
 	go = input("Please place disk on scanner and hit Enter")
-	subprocess.call('scanimage -d "epson2:libusb:001:003" --format=tiff --mode col --resolution 300 -x 150 -y 150 > '+tiff, shell=True)
+	try:
+		subprocess.call('scanimage -d "epson2:libusb:001:003" --format=tiff --mode col --resolution 300 -x 150 -y 150 > '+tiff, shell=True)
+	except: 
+		checkScanner()
+		subprocess.call('scanimage -d "'+scanner+'" --format=tiff --mode col --resolution 300 -x 150 -y 150 > '+tiff, shell=True)
 	
 def cropImage():
 	print("cropping image...")
@@ -78,12 +84,14 @@ def cropImage():
 	os.system("ls "+tiff)
 	print(str(tiff))
 	croppedImage=str(outputPath+callDum+"_trim.jpg")
-	
 	output=subprocess.check_output('convert',tiff,'-virtual-pixel edge','-blur 0x15','-fuzz 15%','-trim','-format "%[fx:w]x%[fx:h]+%[fx:page.x]+%[fx:page.y]"', shell=True)
-
 	subprocess.call("convert "+output+" -trim +repage "+croppedImage, shell=True)
 
-###NOTE TO JESS: try running the internal command first and then capture the output and run the second subprocess on that command####
+def checkScanner():
+	scanner=os.system('scanimage -L | awk \'{print $2}\' | tr -d \'`\' | tr -d \"\'\"')
+	
+	
+
 
 ########################
 #####  THE GOODS  ######
@@ -94,7 +102,6 @@ if not os.path.exists(dir):
 	os.makedirs(dir)
 	
 os.chdir(dir)
-os.system("pwd")
 
 ### Create directory for output if it doesn't exist
 outputPath = lib+"/"+callDum+"/"
@@ -109,9 +116,11 @@ if os.path.exists(outputPath):
 if not os.path.exists(outputPath):
 	os.makedirs(outputPath)
 
+### Check scanner location
 
 
-#runScanner()
-cropImage()
+#checkScanner()
+runScanner()
+#cropImage()
 
 

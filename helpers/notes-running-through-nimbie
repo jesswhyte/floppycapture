@@ -1,0 +1,23 @@
+Step 1 - Clean up the bins and cues
+
+bash ~/scripts/floppycapture/helpers/nimbieclean.sh /media/sf_SHARED_WITH_VM/CAPTURED/ **not ready, working on
+manual for now
+
+
+## nimbie reconciliation
+bash checknimbie.sh -l ECSL -d /media/sf_SHARED_WITH_VM/ -s /media/sf_SHARED_WITH_VM/CAPTURED/
+
+## just scan
+bash ~/scripts/floppycapture/helpers/justscan.sh -l ECSL -d /media/sf_SHARED_WITH_VM/ -c QA76-6-S29-1998X
+
+## full cd capture
+bash ~/scripts/floppycapture/helpers/cdcapture.sh -l ECSL -d /media/sf_SHARED_WITH_VM/ -c QA76-64-L483-1998
+
+
+
+
+
+
+
+
+
