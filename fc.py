@@ -17,7 +17,7 @@ import json
 import urllib
 import re
 import csv
-import pandas as pd
+#import pandas as pd
 from urllib.request import urlopen
 from collections import OrderedDict
 
@@ -152,6 +152,7 @@ def kfStream():
 
 #takes existing stream, attemps to make image based on given fileSystem 
 def kfImage(fileSystem):
+	outputPath = lib+"/"+callDum+"/"
 	os.system(
 		"dtc -fstreams/"+callDum+"/"
 		+callDum+"_stream00.0.raw -i0 -f"+outputPath+callDum+"_disk.img -"
