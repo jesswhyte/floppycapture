@@ -2,6 +2,9 @@ Jess Whyte and Andy Foster, 2018
 Scripts for floppy intake work at UTL
 Feel free to take/adapt/fork/whatever, but please cite/acknowledge, thanks
 
+![](floppycapture/helpers/fc-py-forgithub.gif)
+      
+
 ****fc.py****
 
 FloppyCapture, or fc.py, is a workflow script to ingest floppy disks (3.5" and 5.25") using a kryoflux two-drive setup,
