@@ -53,6 +53,7 @@ def get_json_data(url):
 	response = urlopen(url)
 	data = response.read().decode()
 	return json.loads((data), object_pairs_hook=OrderedDict)
+	print(data)
 
 # For when there are multiple cat keys for a call number
 def disambiguate_records(d):
@@ -101,12 +102,12 @@ catUrl = str("https://search.library.utoronto.ca/details?%s&format=json" % catKe
 os.system("curl \'"+catUrl+"\' | jq .")
 
 ### NOTE: SUPER ENVIRONMENT SPECIFIC - GOT TO CHANGE - JUST MAKING DO FOR THIS PROJECT
-outputPath = "/home/jess/CAPTURED/ECSL/"+callDum+"/"
+#outputPath = "/home/jess/CAPTURED/ECSL/"+callDum+"/"
 
-if os.path.exists(outputPath):
-	print (bcolors.FAIL+"WARNING: "+str(outputPath)+" exists already"+bcolors.ENDC)
-else:
-	print (bcolors.WARNING+str(outputPath)+" does not exist"+bcolors.ENDC)
+#if os.path.exists(outputPath):
+#	print (bcolors.FAIL+"WARNING: "+str(outputPath)+" exists already"+bcolors.ENDC)
+#else:
+#	print (bcolors.WARNING+str(outputPath)+" does not exist"+bcolors.ENDC)
 
 
 #call_dic = get_json_data(catUrl)

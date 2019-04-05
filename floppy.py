@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 #IN PROGRESS
 ### environment-specific Python3 script to walk through floppy disk capture workflow for gen collections items (i.e. items with callNum)
 ### uses qtv4l document scanner (need ffmpeg) 
@@ -248,7 +250,8 @@ elif mediaType == "5.25":
 ### TO DO: should be adapted to check *all* /LIB/CALLDUM/ paths? to avoid dupes across libraries?
 ### Check if entry exists in project log
 
-with open('projectlog.csv','r') as inlog:
+
+with open('projectlog.csv','a+') as inlog:
 	reader=csv.reader(inlog)
 	for row in reader:
 		if not (row):
@@ -438,6 +441,7 @@ if os.path.exists(
 	log.write(",img=OK")
 else:
 	log.write(",img=NO")
+log.write(","+date)
 
 ### Close master log
 log.close()

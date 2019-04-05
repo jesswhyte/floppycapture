@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 ### IN PROGRESS
 ### Python3 script to walk through floppy disk capture workflow
@@ -59,9 +59,12 @@ date = datetime.datetime.today().strftime('%Y-%m-%d')
 collection = args.collection
 mediaType = args.mediatype
 key = args.key
-label = args.transcript
 dir = args.dir
 note=args.note
+if args.transcript:
+	label = args.transcript
+else:
+	label = "no disk label"
 
 #################################
 ########## CLASS STUFF ##########
@@ -148,6 +151,27 @@ if os.path.exists(outputPath):
 if not os.path.exists(outputPath):
 	os.makedirs(outputPath)
 
+### CAMERA - TAKE A PICTURE - VERY ENV SPECIFIC TO MY CAMERA
+photoPrompt = input("Do you want to photograph the disk? (Warning: requires /dev/video0 device connected) [y/n]")
+
+if photoPrompt == "y":
+	picName = key + ".jpg"
+
+	picParameters = " -f video4linux2 -s 1600x1200 -i /dev/video0 -ss 0:0:6 -frames 1 -hide_banner -loglevel panic "+outputPath+picName
+
+	gopic = input(bcolors.INPUT+"Please place disk for picture and hit Enter"+bcolors.ENDC)
+
+	print("Wait please...taking picture...")
+	os.system("ffmpeg"+picParameters)
+
+### Double check pic worked and warn if it didn't:
+	if os.path.exists(
+		outputPath+picName):
+		print("-Pic: %s%s taken" % (outputPath,picName))
+	else:
+		print(bcolors.FAIL+"-Pic: %s%s NOT TAKEN. CHECK CAMERA + FFMPEG SETTINGS" % (outputPath,picName))
+
+
 ### KRYOFLUX - GET A PRESERVATION STREAM
 
 ## Pause and give user time to put disk in 
@@ -182,7 +206,6 @@ else:
 		if not os.path.exists(outputPath+"_disk.img"):	
 			# create image from stream, based on provided filesystem	
 			kfImage(fileSystem)
-	
 
 #########################################
 #### END MATTER and METADATA UPDATES ####
@@ -193,30 +216,31 @@ else:
 ## TODO: this should really use csv library, I was lazy
 
 ## User asked if they'd like to update the notes they entered
-noteupdate = input(bcolors.INPUT+"If you would like to update the disk notes (currently: "+bcolors.OKGREEN+note+bcolors.ENDC+bcolors.INPUT+"), please re-enter, otherwise hit Enter: "+bcolors.ENDC)
-if noteupdate == "":
-	note = note
-	print("-Note unchanged...")
-else:
+noteupdate = input(bcolors.INPUT+"If you would like to update the disk notes (currently: "+bcolors.OKGREEN+str(note)+bcolors.ENDC+bcolors.INPUT+"), please re-enter, otherwise hit Enter: "+bcolors.ENDC)
+if noteupdate:
 	note = noteupdate
-	print("-Note has been updated to: " + bcolors.OKGREEN + note + bcolors.ENDC)
-
+	print("-Note has been updated to: " + bcolors.OKGREEN + str(note) + bcolors.ENDC)
+else:
+	note = "No-transcript"
+	print("-Note unchanged...")
+	
 ## Open and update the masterlog - projectlog.csv
 log = open('projectlog.csv','a+')
 print("-Updating log...")
 
 log.write(
 	"\n"+collection+","+key+","+mediaType+
-	","+"\""+label+"\",\""+note+"\"")
+	","+"\""+label+"\",\""+str(note)+"\"")
 if os.path.exists(
 	outputPath+key+"_disk.img"):
 	log.write(",img=OK")
 else:
 	log.write(",img=NO")
+log.write(","+date)
 
 ### Close master log
 log.close()
 
-sys.exit ("-Exiting...")
+sys.exit ("-Exiting...to extract logical files from your disk images and generate .csv manifests, please run disk-img-extraction.sh on collection directory")
 
 
