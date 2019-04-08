@@ -7,7 +7,8 @@ Feel free to take/adapt/fork/whatever, but please cite/acknowledge, thanks
 
 FloppyCapture, or floppy.py, is a workflow script to ingest floppy disks (3.5" and 5.25") using a kryoflux two-drive setup, and attached camera. 
 
-note: this is an environment-specific, institution-specific (e.g. calls the UTL catalog) script, but could be modified. For a more generalized version, see floppy-nocall.py under /helpers. 
+note: this is an environment-specific, institution-specific (e.g. calls the UTL catalog) script, but could be modified. For a more generalized version, see floppy-nocall.py.
+
 usage: floppy.py [-h] -l            {ARCH,ART,ASTRO,CHEM,CRIM,DENT,OPIRG,EARTH,EAL,ECSL,FCML,FNH,GERSTEIN,
                                 INFORUM,INNIS,KNOX,LAW,MDL,MATH,MC,PONTIF,MUSIC,NEWCOLLEGE,NEWMAN,OISE,PJRC,
                                  PHYSICS,REGIS,RCL,UTL,ROM,MPI,STMIKES,TFRBL,TRIN,UC,UTARMS,UTM,UTSC,VIC}
@@ -50,6 +51,8 @@ That process is separate.
 floppy-nocall.py is a generalized version of floppy.py (it doesn't attempt to call the UTL catalog or take a photo). 
 It's a workflow script to image floppy disks (3.5" and 5.25") using a kryoflux two-drive setup. 
 
+The camera setup is local, you will need to change this or opt-out. 
+
 usage: floppy-nocall.py [-h] -c COLLECTION -d DIR [-i] -m {3.5,5.25}
                         [-t TRANSCRIPT] [-n NOTE] -k KEY
 
@@ -78,7 +81,7 @@ The following: floppy-nocall -c Coll003 -d /share/floppies -m 3.5 -k 001 , will 
 /share/floppies/Coll003/001/ ← directory for individual disk
 /share/floppies/Coll003/001/001_capture.log ← kryoflux’s log of capture
 /share/floppies/Coll003/001/001_disk.img ← disk.img, can be mounted/files extracted
-/share/floppies/Coll003/001/001.jpg ← picture of disk, only if camera is attached and you opt-in at prompt
+/share/floppies/Coll003/001/001.jpg ← picture of disk, only if camera is attached and you opt-in at the prompt
 
 
 
@@ -92,7 +95,7 @@ it will take stream (while trying i4 and i9) and then prompts user for i-type to
 -prompts if you want to update your notes
 -updates a master project log.csv (in your -d directory)
 
-note: you may want to adjust the kryoflux functions and the dtc command parameters, 
+*****note: you may want to adjust the kryoflux functions and the dtc command parameters, 
 e.g. mine are set to only make 2 tries and limit the log output. 
 
 
