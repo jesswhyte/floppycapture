@@ -164,6 +164,10 @@ if photoPrompt == "y":
 	print("Wait please...taking picture...")
 	os.system("ffmpeg"+picParameters)
 
+else:
+	picName = "NoPhoto"
+	print("No photo taken")
+
 ### Double check pic worked and warn if it didn't:
 	if os.path.exists(
 		outputPath+picName):
@@ -221,7 +225,7 @@ if noteupdate:
 	note = noteupdate
 	print("-Note has been updated to: " + bcolors.OKGREEN + str(note) + bcolors.ENDC)
 else:
-	note = "No-transcript"
+	note = "NA"
 	print("-Note unchanged...")
 	
 ## Open and update the masterlog - projectlog.csv
