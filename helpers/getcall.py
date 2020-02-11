@@ -50,7 +50,6 @@ callnumber = cat_dic['record']['holdings']['items'][0]['callnumber']
 callnumber = callnumber.replace(' ','_')
 print(callnumber)
 
-print() #line break
 sys.exit (0) #exit
 
 
