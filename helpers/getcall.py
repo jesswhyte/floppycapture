@@ -45,8 +45,8 @@ title = cat_dic['record']['title'] #set the $title variable based on record.titl
 
 callnumber = cat_dic['record']['holdings']['items'][0]['callnumber']
 
-#print(callnumber)
-#callnumber = callnumber.replace('.','-')
+#print(callnumber) ## if you want to print original call number
+#callnumber = callnumber.replace('.','-') ## if you wanted to replace dots with dashes
 callnumber = callnumber.replace(' ','_')
 print(callnumber)
 
