@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 ### Python3 script to pull catalog metadata and add processing metadata, outputs to stdout
+### USAGE: python3 getcall.py -k <catkey>
+### OUTPUTS formatted callnumber for file/directory naming
 ### Jess Whyte 
 
 #######################
@@ -19,7 +21,7 @@ from collections import OrderedDict
 ###### ARGUMENTS ######
 
 parser = argparse.ArgumentParser(
-	description ="Script to convert catkey to callnum for, say, filenames")
+	description ="Script to convert catkey to callnum for, say, filenames. Usage python3 getcall.py <catkey>")
 parser.add_argument(
 	'-k', '--key', type=str,
 	help='catkey', required=True)  
