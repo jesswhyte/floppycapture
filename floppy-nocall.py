@@ -39,7 +39,7 @@ parser.add_argument(
 	choices=['3.5','5.25'])
 parser.add_argument(
 	'-t', '--transcript', type=str,
-	help='Transcript of label', required=False)
+	help='Transcript of label, please put in single quotations and avoid commas', required=False)
 parser.add_argument(
 	'-n','--note', type=str,
 	help='capture notes', required=False)
@@ -152,24 +152,37 @@ if not os.path.exists(outputPath):
 	os.makedirs(outputPath)
 
 ### CAMERA - TAKE A PICTURE - VERY ENV SPECIFIC TO MY CAMERA
-photoPrompt = input("Do you want to photograph the disk? (Warning: requires /dev/video0 device connected) [y/n]")
+print ("Camera is not available at this time")
 
-if photoPrompt == "y":
-	picName = key + ".jpg"
+#photoPrompt = input("Do you want to photograph the disk? (Warning: requires /dev/video0 device connected) [y/n]")
 
-	picParameters = " -f video4linux2 -s 1600x1200 -i /dev/video0 -ss 0:0:6 -frames 1 -hide_banner -loglevel panic "+outputPath+picName
+#if photoPrompt == "y":
+#	picName = key + ".jpg"
 
-	gopic = input(bcolors.INPUT+"Please place disk for picture and hit Enter"+bcolors.ENDC)
+	# old picParameters when using gphoto2:
+	#picParameters = " --capture-image-and-download --debug --filename="+outputPath+picName
+	## old picParameters when using ffmpeg:
+	#picParameters = " -f video4linux2 -s 1600x1200 -i /dev/video0 -ss 0:0:6 -frames 1 -hide_banner -loglevel panic "+outputPath+picName
+	
+#	picParameters = " --jpeg 95 -r 1600x1200 --no-banner -S 55 --set sharpness=1 "+outputPath+picName
+		
+#	gopic = input(bcolors.INPUT+"Please place disk for picture and hit Enter"+bcolors.ENDC)
 
-	print("Wait please...taking picture...")
-	os.system("ffmpeg"+picParameters)
+#	print("Wait please...taking picture...")
+	
+#	os.system("fswebcam"+ picParameters) ###old fswebcam command
+	
+	#old Pic command, using gphoto2
+	#os.system("gphoto2"+picParameters) #gphoto2 command
+	#old Pic Command, using ffmpeg
+	#os.system("ffmpeg"+picParameters) #ffmpeg command
 
 ### Double check pic worked and warn if it didn't:
-	if os.path.exists(
-		outputPath+picName):
-		print("-Pic: %s%s taken" % (outputPath,picName))
-	else:
-		print(bcolors.FAIL+"-Pic: %s%s NOT TAKEN. CHECK CAMERA + FFMPEG SETTINGS" % (outputPath,picName))
+#	if os.path.exists(
+#		outputPath+picName):
+#		print("-Pic: %s%s taken" % (outputPath,picName))
+#	else:
+#		print(bcolors.FAIL+"-Pic: %s%s NOT TAKEN. CHECK CAMERA, CONTINUING" % (outputPath,picName))
 
 
 ### KRYOFLUX - GET A PRESERVATION STREAM
@@ -213,7 +226,7 @@ else:
 
 
 ### Update master log
-## TODO: this should really use csv library, I was lazy
+
 
 ## User asked if they'd like to update the notes they entered
 noteupdate = input(bcolors.INPUT+"If you would like to update the disk notes (currently: "+bcolors.OKGREEN+str(note)+bcolors.ENDC+bcolors.INPUT+"), please re-enter, otherwise hit Enter: "+bcolors.ENDC)
