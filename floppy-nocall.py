@@ -152,12 +152,12 @@ if not os.path.exists(outputPath):
 	os.makedirs(outputPath)
 
 ### CAMERA - TAKE A PICTURE - VERY ENV SPECIFIC TO MY CAMERA
-print ("Camera is not available at this time")
+#print ("Camera is not available at this time")
 
-#photoPrompt = input("Do you want to photograph the disk? (Warning: requires /dev/video0 device connected) [y/n]")
+photoPrompt = input("Do you want to photograph the disk? (Warning: requires device connected) [y/n]")
 
-#if photoPrompt == "y":
-#	picName = key + ".jpg"
+if photoPrompt == "y":
+	picName = key + ".jpg"
 
 	# old picParameters when using gphoto2:
 	#picParameters = " --capture-image-and-download --debug --filename="+outputPath+picName
@@ -166,23 +166,29 @@ print ("Camera is not available at this time")
 	
 #	picParameters = " --jpeg 95 -r 1600x1200 --no-banner -S 55 --set sharpness=1 "+outputPath+picName
 		
-#	gopic = input(bcolors.INPUT+"Please place disk for picture and hit Enter"+bcolors.ENDC)
+## new picParameters, testing out gphoto suggested hack Dec 2022
+	print("gphoto is going to output a lot of information, sorry...")
+	picParameters = " --wait-event=1s --set-config eosremoterelease='Press 1' --wait-event=1s --set-config eosremoterelease='Press 2' --wait-event=100ms --set-config eosremoterelease='Release 2' --set-config eosremoterelease='Release 1' --wait-event-and-download=5s --filename "+outputPath+picName
 
-#	print("Wait please...taking picture...")
+	gopic = input(bcolors.INPUT+"Please place disk for picture and hit Enter"+bcolors.ENDC)
+
+	print("Wait please...taking picture...")
 	
+
 #	os.system("fswebcam"+ picParameters) ###old fswebcam command
 	
-	#old Pic command, using gphoto2
-	#os.system("gphoto2"+picParameters) #gphoto2 command
-	#old Pic Command, using ffmpeg
+	#Pic command, using gphoto2
+	os.system("gphoto2"+picParameters) #gphoto2 command
+	
+#old Pic Command, using ffmpeg
 	#os.system("ffmpeg"+picParameters) #ffmpeg command
 
 ### Double check pic worked and warn if it didn't:
-#	if os.path.exists(
-#		outputPath+picName):
-#		print("-Pic: %s%s taken" % (outputPath,picName))
-#	else:
-#		print(bcolors.FAIL+"-Pic: %s%s NOT TAKEN. CHECK CAMERA, CONTINUING" % (outputPath,picName))
+	if os.path.exists(
+		outputPath+picName):
+		print("-Pic: %s%s taken" % (outputPath,picName))
+	else:
+		print(bcolors.FAIL+"-Pic: %s%s NOT TAKEN. CHECK CAMERA, CONTINUING" % (outputPath,picName))
 
 
 ### KRYOFLUX - GET A PRESERVATION STREAM
