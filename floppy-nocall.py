@@ -235,7 +235,7 @@ else:
 
 
 ## User asked if they'd like to update the notes they entered
-noteupdate = input(bcolors.INPUT+"If you would like to update the disk notes (currently: "+bcolors.OKGREEN+str(note)+bcolors.ENDC+bcolors.INPUT+"), please re-enter, otherwise hit Enter: "+bcolors.ENDC)
+noteupdate = input(bcolors.INPUT+"If you would like to update the disk notes (currently: "+bcolors.OKGREEN+str(note)+bcolors.ENDC+bcolors.INPUT+"), please re-enter, otherwise hit Enter (Note: input `i4` for MFM format and `i9` for Apple DOS 400k/800k format) : "+bcolors.ENDC)
 if noteupdate:
 	note = noteupdate
 	print("-Note has been updated to: " + bcolors.OKGREEN + str(note) + bcolors.ENDC)
