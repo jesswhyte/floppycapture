@@ -65,6 +65,8 @@ if args.transcript:
 	label = args.transcript
 else:
 	label = "no disk label"
+yes_string = ["y", "yes", "Yes", "YES"]
+no_string = ["n", "no", "No", "NO"]
 
 #################################
 ########## CLASS STUFF ##########
@@ -129,11 +131,11 @@ outputPath = collection+"/"+key+"/"
 ### JW NOTE: Check if os.path exists and then ask whether or not to proceed and how
 
 if os.path.exists(outputPath):
-	replacePath = input(bcolors.INPUT+"path already exists, proceed anyway [y/n]? "+bcolors.ENDC)
-	if replacePath.lower() == 'y' or replacePath.lower() == 'yes':
+	replacePath = input(bcolors.INPUT+"path already exists, proceed anyway? [y/n]"+bcolors.ENDC)
+	if replacePath.lower() in yes_string:
 		# replaceStream only an option, because sometimes I want to keep original photo/metadata, but want to try 			# replacing what might have been a previously unsuccessful capture, e.g. if there is another copy of disk
-		replaceStream = input(bcolors.INPUT+"Replace stream/image **ONLY** (i.e. no photography) [y/n]? "+bcolors.ENDC)
-		if replaceStream.lower() == 'y' or replaceStream.lower() == 'yes':
+		replaceStream = input(bcolors.INPUT+"Replace stream/image **ONLY** (i.e. no photography)? [y/n]"+bcolors.ENDC)
+		if replaceStream.lower() in yes_string:
 			go = input(bcolors.INPUT+"Please insert disk and hit Enter"+bcolors.ENDC)
 			if args.i4:
 				kfi4()
@@ -142,10 +144,10 @@ if os.path.exists(outputPath):
 				fileSystem = input(bcolors.INPUT+"Which filesytem? "+bcolors.ENDC)
 				kfImage(fileSystem)
 			sys.exit("-Stream/image replaced. No other entries updated. Exiting...")
-		if replaceStream.lower() == 'n' or replaceStream.lower() =='no':
+		if replaceStream.lower() in no_string:
 			replaceStream == 'no'
 			print(bcolors.OKGREEN+"Replacing "+key+" ..."+bcolors.ENDC)
-	if replacePath.lower() == 'n' or replacePath.lower() == 'no':
+	if replacePath.lower() in no_string:
 		sys.exit("-No entries updated. Exiting...")
 
 if not os.path.exists(outputPath):
@@ -154,9 +156,9 @@ if not os.path.exists(outputPath):
 ### CAMERA - TAKE A PICTURE - VERY ENV SPECIFIC TO MY CAMERA
 #print ("Camera is not available at this time")
 
-photoPrompt = input("Do you want to photograph the disk? (Warning: requires device connected) [y/n]")
+photoPrompt = input("Do you want to photograph the disk (Warning: requires device connected)? [y/n]")
 
-if photoPrompt !="n":
+if photoPrompt not in no_string:
 	picName = key + ".jpg"
 
 	# old picParameters when using gphoto2:
@@ -199,8 +201,8 @@ go = input(bcolors.INPUT+"Please insert disk and hit Enter"+bcolors.ENDC)
 ## take the stream only if it doesn't already exist
 ## note: streams do not go in diskID directory
 if os.path.exists("streams/"+key+"/"+key+"_stream00.0.raw"):
-	replaceStream = input(bcolors.INPUT+"streams/"+key+"/"+key+"_stream00.0.raw exists, replace y/n? "+bcolors.ENDC)
-	if replaceStream.lower() == 'y' or replaceStream.lower() == 'yes':
+	replaceStream = input(bcolors.INPUT+"streams/"+key+"/"+key+"_stream00.0.raw exists, replace? [y/n]"+bcolors.ENDC)
+	if replaceStream.lower() in yes_string:
 		if args.i4:
 			kfi4()
 		else:
@@ -209,8 +211,8 @@ if os.path.exists("streams/"+key+"/"+key+"_stream00.0.raw"):
 			kfImage(fileSystem)		
 	else:
 		# if replaceStream=N, still ask if user wants to update metadata/master log		
-		replaceMeta = input(bcolors.INPUT+"replace metadata and create new log entry y/n? "+bcolors.ENDC)
-		if replaceMeta.lower() == 'n' or replaceMeta.lower() == 'no':
+		replaceMeta = input(bcolors.INPUT+"replace metadata and create new log entry? [y/n]"+bcolors.ENDC)
+		if replaceMeta.lower() in no_string:
 			# if replaceMeta=N, close out and exit, otherwise carry on
 			metadata.close()
 			sys.exit ("-Exiting...")
@@ -240,7 +242,7 @@ if noteupdate:
 	note = noteupdate
 	print("-Note has been updated to: " + bcolors.OKGREEN + str(note) + bcolors.ENDC)
 else:
-	note = "No-transcript"
+	note = "No-note"
 	print("-Note unchanged...")
 	
 ## Open and update the masterlog - projectlog.csv
