@@ -129,10 +129,10 @@ outputPath = collection+"/"+key+"/"
 ### JW NOTE: Check if os.path exists and then ask whether or not to proceed and how
 
 if os.path.exists(outputPath):
-	replacePath = input(bcolors.INPUT+"path already exists, proceed anyway y/n? "+bcolors.ENDC)
+	replacePath = input(bcolors.INPUT+"path already exists, proceed anyway [y/n]? "+bcolors.ENDC)
 	if replacePath.lower() == 'y' or replacePath.lower() == 'yes':
 		# replaceStream only an option, because sometimes I want to keep original photo/metadata, but want to try 			# replacing what might have been a previously unsuccessful capture, e.g. if there is another copy of disk
-		replaceStream = input(bcolors.INPUT+"Replace stream/image **ONLY** y/n? "+bcolors.ENDC)
+		replaceStream = input(bcolors.INPUT+"Replace stream/image **ONLY** (i.e. no photography) [y/n]? "+bcolors.ENDC)
 		if replaceStream.lower() == 'y' or replaceStream.lower() == 'yes':
 			go = input(bcolors.INPUT+"Please insert disk and hit Enter"+bcolors.ENDC)
 			if args.i4:
@@ -156,7 +156,7 @@ if not os.path.exists(outputPath):
 
 photoPrompt = input("Do you want to photograph the disk? (Warning: requires device connected) [y/n]")
 
-if photoPrompt == "y":
+if photoPrompt !="n":
 	picName = key + ".jpg"
 
 	# old picParameters when using gphoto2:
