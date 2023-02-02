@@ -148,7 +148,7 @@ if os.path.exists(outputPath):
 			replaceStream == 'no'
 			print(bcolors.OKGREEN+"Replacing "+key+" ..."+bcolors.ENDC)
 	if replacePath.lower() in no_string:
-		sys.exit("-No entries updated and file created. Exiting...")
+		sys.exit("-No entries updated and files created. Exiting...")
 
 if not os.path.exists(outputPath):
 	os.makedirs(outputPath)
