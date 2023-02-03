@@ -131,7 +131,7 @@ outputPath = collection+"/"+key+"/"
 ### JW NOTE: Check if os.path exists and then ask whether or not to proceed and how
 
 if os.path.exists(outputPath):
-	replacePath = input(bcolors.INPUT+"path already exists, proceed anyway? [y/n]"+bcolors.ENDC)
+	replacePath = input(bcolors.INPUT+"Path already exists, proceed anyway? [y/n]"+bcolors.ENDC)
 	if replacePath.lower() in yes_string:
 		# replaceStream only an option, because sometimes I want to keep original photo/metadata, but want to try 			# replacing what might have been a previously unsuccessful capture, e.g. if there is another copy of disk
 		replaceStream = input(bcolors.INPUT+"Replace stream/image **ONLY** (i.e. no photography)? [y/n]"+bcolors.ENDC)
@@ -148,7 +148,7 @@ if os.path.exists(outputPath):
 			replaceStream == 'no'
 			print(bcolors.OKGREEN+"Replacing "+key+" ..."+bcolors.ENDC)
 	if replacePath.lower() in no_string:
-		sys.exit("-No entries updated. Exiting...")
+		sys.exit("-No entries updated and files created. Exiting...")
 
 if not os.path.exists(outputPath):
 	os.makedirs(outputPath)
@@ -156,10 +156,36 @@ if not os.path.exists(outputPath):
 ### CAMERA - TAKE A PICTURE - VERY ENV SPECIFIC TO MY CAMERA
 #print ("Camera is not available at this time")
 
+picName = key + ".jpg"
+PicPath = outputPath + picName
+picParameters = " --wait-event=1s --set-config eosremoterelease='Press 1' --wait-event=1s --set-config eosremoterelease='Press 2' --wait-event=100ms --set-config eosremoterelease='Release 2' --set-config eosremoterelease='Release 1' --wait-event-and-download=5s  --filename "+outputPath+picName+" --force-overwrite " + "> /dev/null" #Force overwrite the image file, and slient the output of the photo taking script by gphoto2 in the terminal. Updated in Jan 2023
+
 photoPrompt = input("Do you want to photograph the disk (Warning: requires device connected)? [y/n]")
 
-if photoPrompt not in no_string:
-	picName = key + ".jpg"
+## Modified version based on Dec 2022 to fit in the new picParameters. Updated in Jan 2023
+if photoPrompt in yes_string:
+	if os.path.exists(PicPath):
+		replacephotopath = input(bcolors.INPUT+"Photo already exists, proceed anyway? [y/n]"+bcolors.ENDC)
+		if replacephotopath in yes_string:
+			gopic = input(bcolors.INPUT+"Please place disk for picture and hit Enter"+bcolors.ENDC)
+			print("Wait please...taking picture...")
+			os.system("gphoto2"+picParameters) #gphoto2 command
+			if os.path.exists(PicPath):
+				print("-Pic: %s is captured" % (PicPath))
+		else:
+			print("No photo is taken/modified")
+	else:
+		gopic = input(bcolors.INPUT+"Please place disk for picture and hit Enter"+bcolors.ENDC)
+		print("Wait please...taking picture...")
+		os.system("gphoto2"+picParameters) #gphoto2 command
+		if os.path.exists(PicPath):
+			print("-Pic: %s is captured" % (PicPath))
+else:
+	print("No photo is taken/modified")
+
+
+# if photoPrompt not in no_string:
+	# picName = key + ".jpg"
 
 	# old picParameters when using gphoto2:
 	#picParameters = " --capture-image-and-download --debug --filename="+outputPath+picName
@@ -169,28 +195,25 @@ if photoPrompt not in no_string:
 #	picParameters = " --jpeg 95 -r 1600x1200 --no-banner -S 55 --set sharpness=1 "+outputPath+picName
 		
 ## new picParameters, testing out gphoto suggested hack Dec 2022
-	print("gphoto is going to output a lot of information, sorry...")
-	picParameters = " --wait-event=1s --set-config eosremoterelease='Press 1' --wait-event=1s --set-config eosremoterelease='Press 2' --wait-event=100ms --set-config eosremoterelease='Release 2' --set-config eosremoterelease='Release 1' --wait-event-and-download=5s --filename "+outputPath+picName
+	#print("gphoto is going to output a lot of information, sorry...")
+	#picParameters = " --wait-event=1s --set-config eosremoterelease='Press 1' --wait-event=1s --set-config eosremoterelease='Press 2' --wait-event=100ms --set-config #eosremoterelease='Release 2' --set-config eosremoterelease='Release 1' --wait-event-and-download=5s --filename "+outputPath+picName
 
-	gopic = input(bcolors.INPUT+"Please place disk for picture and hit Enter"+bcolors.ENDC)
+	#gopic = input(bcolors.INPUT+"Please place disk for picture and hit Enter"+bcolors.ENDC)
 
-	print("Wait please...taking picture...")
+	#print("Wait please...taking picture...")
 	
 
 #	os.system("fswebcam"+ picParameters) ###old fswebcam command
 	
 	#Pic command, using gphoto2
-	os.system("gphoto2"+picParameters) #gphoto2 command
+	#os.system("gphoto2"+picParameters) #gphoto2 command
 	
 #old Pic Command, using ffmpeg
 	#os.system("ffmpeg"+picParameters) #ffmpeg command
 
-### Double check pic worked and warn if it didn't:
-	if os.path.exists(
-		outputPath+picName):
-		print("-Pic: %s%s taken" % (outputPath,picName))
-	else:
-		print(bcolors.FAIL+"-Pic: %s%s NOT TAKEN. CHECK CAMERA, CONTINUING" % (outputPath,picName))
+### Double check pic worked and warn if it didn't (Updated in Jan 2023)
+if not os.path.exists(PicPath):
+	print(bcolors.FAIL+"-Pic: %s NOT TAKEN. CHECK CAMERA, CONTINUING" % (PicPath))
 
 
 ### KRYOFLUX - GET A PRESERVATION STREAM
@@ -242,7 +265,7 @@ if noteupdate:
 	note = noteupdate
 	print("-Note has been updated to: " + bcolors.OKGREEN + str(note) + bcolors.ENDC)
 else:
-	note = "No-note"
+	note = "No-notes" #Changed to "No-notes" for better clarity
 	print("-Note unchanged...")
 	
 ## Open and update the masterlog - projectlog.csv
