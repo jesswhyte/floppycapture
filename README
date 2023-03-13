@@ -72,7 +72,7 @@ arguments:
 
 
 Example command: 
-python3 floppy-nocall.py -c Accession-12345 -d /CAPTURED -m 3.5 -t "transcript of the disk label" -n "note: supplementary materials" -k Disk-000123
+python3 floppy-nocall.py -c Accession-12345 -d /CAPTURED -m 3.5 -t "transcript of the disk label" -n "note: supplementary materials" -k Disk-000123 -p projectlog.csv
 
 The following: floppy-nocall -c Coll003 -d /share/floppies -m 3.5 -k 001 , will output: 
 
