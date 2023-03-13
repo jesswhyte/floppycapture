@@ -68,6 +68,7 @@ arguments:
                         Transcript of label
   -n NOTE, --note NOTE  capture notes
   -k KEY, --key KEY     diskID
+  -p PROJECTLOG, --projectlog PROJECT name of the log CSV file 
 
 
 Example command: 
