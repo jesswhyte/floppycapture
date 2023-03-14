@@ -46,6 +46,9 @@ parser.add_argument(
 parser.add_argument(
 	'-k', '--key',type=str,
 	help='diskID',required=True)
+parser.add_argument(
+	'-p', '--projectlog',type=str,
+	help='projectlog file name',required=False)
 
 ## Array for all args passed to script
 args = parser.parse_args()
@@ -65,6 +68,11 @@ if args.transcript:
 	label = args.transcript
 else:
 	label = "no disk label"
+
+if args.projectlog:
+	projectlog = args.projectlog
+else:
+	projectlog = "projectlog.csv"
 yes_string = ["y", "yes", "Yes", "YES"]
 no_string = ["n", "no", "No", "NO"]
 
@@ -269,7 +277,7 @@ else:
 	print("-Note unchanged...")
 	
 ## Open and update the masterlog - projectlog.csv
-log = open('projectlog.csv','a+')
+log = open(projectlog,'a+')
 print("-Updating log...")
 
 log.write(
