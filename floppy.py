@@ -41,8 +41,8 @@ parser.add_argument(
 	'REGIS','RCL','UTL','ROM','MPI','STMIKES',
 	'TFRBL','TRIN','UC','UTARMS','UTM','UTSC','VIC'])
 parser.add_argument(
-        '-d','--dir', type=str,
-        help='Start directory, e.g. /home/jess/CAPTURED', required=True)
+    '-d','--dir', type=str,
+    help='output directory, e.g. /mnt/data/DISK-9999', required=True)
 parser.add_argument(
 	'-i','--i4',action='store_true',
 	help='use flag to default to i4/MFM')
@@ -51,11 +51,19 @@ parser.add_argument(
 	help='Use \"3.5\" or \"5.25\"',required=True,
 	choices=['3.5','5.25'])
 parser.add_argument(
-	'-c', '--call', type=str,
-	help='Call or Collection Number', required=True)
+	'--multiple', action='store_true',
+	help='Multiple discs')
+parser.add_argument('--journal', help='Journal or series', action='store_true')
 parser.add_argument(
-	'-k', '--key', type=str,
-	help='Catkey')
+	'-c', '--call', type=str,
+	help='Call or Collection Number')
+parser.add_argument(
+	'-b', '--barcode', type=str,
+	help='barcode')
+parser.add_argument(
+	-'M', '--MMSID', type=str,
+	help='MMSID'
+)
 #parser.add_argument(
 #	'-t', '--transcript', type=str,
 #	help='Transcript of label', required=False)
@@ -66,25 +74,61 @@ parser.add_argument(
 ## Array for all args passed to script
 args = parser.parse_args()
 
+if not args.lib:
+    print('Library or archive (-l) is required!')
+    exit()
+
+if not args.dir:
+    print('Output directory (-o) is required!')
+    exit()
+
+if args.multiple:
+    print()
+    disknum = input('Multiple discs: Which Disc # is this, e.g. 001, 002, 003? ')
+    print()
+
 ###############################
 ########## VARIABLES ##########
 ###############################
 
 drive = "d0"
-note = "supplementary"
+note = ""
 date = datetime.datetime.today().strftime('%Y-%m-%d')
 lib = args.lib
 mediaType = args.mediatype
-callNum = args.call 
-callNum = callNum.upper() #makes callNum uppercase
-callDum=callNum.replace('.','-') #replaces . in callNum with - for callDum
+diskID = "" 
+
 callNum = re.sub(r".DISK\w","",callNum) # removes the DISK[#] identifier needed for callDum, but only after creating callDum
 catKey = args.key
 #label = args.transcript
 dir = args.dir
-callUrl = str(
-	"https://search.library.utoronto.ca/search?N=0&Ntx=mode+matchallpartial&Nu=p_work_normalized&Np=1&Ntk=p_call_num_949&format=json&Ntt=%s" % callNum
-)
+yes_string = ["y", "yes", "Yes", "YES"]
+no_string = ["n", "no", "No", "NO"]
+
+if args.barcode:
+    output = subprocess.run(['bash', 'barcode-pull.sh', '-b', args.barcode, '-f'], stdout=subprocess.PIPE)
+    print(f'Using barcode: {args.barcode}')
+    if args.journal:
+        print('JOURNAL OR SERIES identified by -J. Using item_data.alternative_call_number')
+        diskID = subprocess.check_output(['jq', '-r', '.item_data.alternative_call_number', 'tmp.json']).decode('utf-8').strip()
+    else:
+        diskID = subprocess.check_output(['jq', '-r', '.holding_data.permanent_call_number', 'tmp.json']).decode('utf-8').strip()
+    print(f'callNumber={diskID}')
+elif args.MMSID:
+    output = subprocess.run(['bash', 'mmsid-pull.sh', '-m', args.MMSID, '-f'], stdout=subprocess.PIPE)
+    print(f'Using MMSID: {args.MMSID}')
+    diskID = subprocess.check_output(['jq', '-r', '.delivery.bestlocation.callNumber', 'tmp.json']).decode('utf-8').strip()
+    print(f'callNumber={diskID}')
+elif args.diskID:
+    print(f'Using: {args.diskID}')
+    diskID = args.diskID
+
+diskID = diskID.replace(' ', '-').replace('.', '-').upper().replace('--', '-').replace('"', '')
+print(f'diskID={diskID}')
+
+if disknum:
+    diskID = f'{diskID}-DISK_{disknum}'
+
 #note=args.note
 
 #################################
