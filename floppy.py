@@ -59,8 +59,8 @@ archival_group.add_argument(
 	help='e.g. 0001, 0002, 0003. Required when using -A')
 ## listing optional arguments
 parser.add_argument(
-	'-i','--i4',action='store_true',
-	help='use -i flag to default to i4/MFM image choice')
+	'-i','--itype',type=str,
+	help='use -i flag to indicate i type, e.g. i 4 = MFM, i 9 = Apple 400/800k, optional')
 parser.add_argument(
 	'-b', '--barcode', type=str,
 	help='barcode')
@@ -108,6 +108,7 @@ else:
 yes_string = ["y", "yes", "Yes", "YES"]
 no_string = ["n", "no", "No", "NO"]
 diskID=""
+itype = args.itype
 
 ## Getting to a diskID
 # then check if a barcode is provided:
@@ -179,11 +180,11 @@ def kfImage(fileSystem):
 		+fileSystem+" -m1")
 
 #Takes preservation stream + attempts to create i4 or MFM disk image
-def kfi4():
+def kfi():
 	os.system(
 		"dtc -"+drive+" -fstreams/"+diskID+"/"
 		+diskID+"_stream -i0 -f"+outputPath+diskID+
-		"_disk.img -i4 -t1 -l8 -p | tee "+outputPath+diskID+"_capture.log")
+		"_disk.img -i"+itype+" -t1 -l8 -p | tee "+outputPath+diskID+"_capture.log")
 
 
 ########################
@@ -214,8 +215,8 @@ if os.path.exists(outputPath):
 		replaceStream = input(bcolors.INPUT+"Replace stream/image **ONLY** (i.e. no photography)? [y/n]"+bcolors.ENDC)
 		if replaceStream.lower() in yes_string:
 			go = input(bcolors.INPUT+"Please insert disk and hit Enter"+bcolors.ENDC)
-			if args.i4:
-				kfi4()
+			if args.itype:
+				kfi()
 			else:
 				kfStream()
 				fileSystem = input(bcolors.INPUT+"Which filesytem? "+bcolors.ENDC)
@@ -276,8 +277,8 @@ go = input(bcolors.INPUT+"Please insert disk and hit Enter"+bcolors.ENDC)
 if os.path.exists("streams/"+diskID+"/"+diskID+"_stream00.0.raw"):
 	replaceStream = input(bcolors.INPUT+"streams/"+diskID+"/"+diskID+"_stream00.0.raw exists, replace? [y/n]"+bcolors.ENDC)
 	if replaceStream.lower() in yes_string:
-		if args.i4:
-			kfi4()
+		if args.i:
+			kfi()
 		else:
 			kfStream()
 			fileSystem = input(bcolors.INPUT+"Which filesytem? "+bcolors.ENDC)
@@ -290,9 +291,9 @@ if os.path.exists("streams/"+diskID+"/"+diskID+"_stream00.0.raw"):
 			metadata.close()
 			sys.exit ("-Exiting...")
 else:
-	if args.i4:
+	if args.itype:
 		# take preservation stream and MFM image at same time		
-		kfi4()
+		kfi()
 	else:
 		# take preservation stream, then ask which filesystem, e.g. i9 or i4, etc.		
 		kfStream()
